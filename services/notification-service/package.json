@@ -1,0 +1,9 @@
+{
+  "name": "@aeronexis-dynamics/notification-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Real-time notification service (WebSocket/push) - AERONEXIS Dynamics",
+  "scripts": {
+    "start": "echo \"start notification-service\""
+  }
+}

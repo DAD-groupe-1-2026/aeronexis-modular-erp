@@ -1,0 +1,9 @@
+{
+  "name": "@aeronexis-dynamics/production-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production Service - AERONEXIS Dynamics",
+  "scripts": {
+    "start": "echo \"start production\""
+  }
+}

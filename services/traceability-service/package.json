@@ -1,0 +1,9 @@
+{
+  "name": "@aeronexis-dynamics/traceability-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Traceability and audit trail service - AERONEXIS Dynamics",
+  "scripts": {
+    "start": "echo \"start traceability-service\""
+  }
+}

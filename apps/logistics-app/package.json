@@ -1,0 +1,10 @@
+{
+  "name": "@aeronexis-dynamics/logistics-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Logistics App - AERONEXIS Dynamics",
+  "scripts": {
+    "dev": "echo \"start dev server\"",
+    "build": "echo \"build app\""
+  }
+}

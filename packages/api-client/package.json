@@ -1,0 +1,10 @@
+{
+  "name": "@aeronexis-dynamics/api-client",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Frontend communication proxy and API client - AERONEXIS Dynamics",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo \"build api-client\""
+  }
+}

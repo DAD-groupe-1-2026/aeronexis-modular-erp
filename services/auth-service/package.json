@@ -1,0 +1,9 @@
+{
+  "name": "@aeronexis-dynamics/auth-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Auth Service - AERONEXIS Dynamics",
+  "scripts": {
+    "start": "echo \"start auth\""
+  }
+}
