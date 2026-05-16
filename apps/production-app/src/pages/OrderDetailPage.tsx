@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Select } from '@/components/ui/form'
-import { mockWorkOrders } from '@/data/mock'
-import type { LotStatus } from '@/types'
+import { useLotDetail } from '@/hooks/queries/useLotDetail'
+import { useUpdateLotStatus } from '@/hooks/mutations/useUpdateLotStatus'
+import type { LotStatus } from '@aeronexis-dynamics/shared-types'
 
 const statusLabel: Record<LotStatus, string> = {
   planned: 'Planifié',
@@ -22,16 +23,17 @@ const statusVariant: Record<LotStatus, 'secondary' | 'warning' | 'success'> = {
 }
 
 export function OrderDetailPage() {
-  const { orderId } = useParams<{ orderId: string }>()
+  const { orderId = '' } = useParams<{ orderId: string }>()
   const navigate = useNavigate()
-  const workOrder = mockWorkOrders.find((wo) => wo.id === orderId)
+  const { data: workOrder, isLoading } = useLotDetail(orderId)
+  const updateLot = useUpdateLotStatus(orderId)
 
-  const [lotStatuses, setLotStatuses] = useState<Record<string, LotStatus>>(
-    Object.fromEntries(workOrder?.lots.map((l) => [l.id, l.status]) ?? []),
-  )
-  const [lotProgress, setLotProgress] = useState<Record<string, number>>(
-    Object.fromEntries(workOrder?.lots.map((l) => [l.id, l.completionPercent]) ?? []),
-  )
+  const [lotStatuses, setLotStatuses] = useState<Record<string, LotStatus>>({})
+  const [lotProgress, setLotProgress] = useState<Record<string, number>>({})
+
+  if (isLoading) {
+    return <div className="p-8 text-sm text-muted-foreground">Chargement...</div>
+  }
 
   if (!workOrder) {
     return (
@@ -42,9 +44,14 @@ export function OrderDetailPage() {
     )
   }
 
+  const getLotStatus = (lotId: string, fallback: LotStatus) =>
+    lotStatuses[lotId] ?? fallback
+
+  const getLotProgress = (lotId: string, fallback: number) =>
+    lotProgress[lotId] ?? fallback
+
   return (
     <div className="p-8 space-y-6">
-      {/* Header */}
       <div className="flex items-start gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-4 w-4" />
@@ -65,13 +72,20 @@ export function OrderDetailPage() {
         </Link>
       </div>
 
-      {/* Order meta */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { icon: Calendar, label: 'Créé le', value: new Date(workOrder.createdAt).toLocaleDateString('fr-FR') },
           { icon: Calendar, label: 'Échéance', value: new Date(workOrder.dueDate).toLocaleDateString('fr-FR') },
-          { icon: CheckCircle2, label: 'Lots terminés', value: `${workOrder.lots.filter((l) => lotStatuses[l.id] === 'done').length} / ${workOrder.lots.length}` },
-          { icon: Clock, label: 'En cours', value: `${workOrder.lots.filter((l) => lotStatuses[l.id] === 'in_progress').length}` },
+          {
+            icon: CheckCircle2,
+            label: 'Lots terminés',
+            value: `${workOrder.lots.filter((l) => getLotStatus(l.id, l.status) === 'done').length} / ${workOrder.lots.length}`,
+          },
+          {
+            icon: Clock,
+            label: 'En cours',
+            value: `${workOrder.lots.filter((l) => getLotStatus(l.id, l.status) === 'in_progress').length}`,
+          },
         ].map(({ icon: Icon, label, value }) => (
           <Card key={label}>
             <CardContent className="pt-5 pb-4">
@@ -87,12 +101,11 @@ export function OrderDetailPage() {
         ))}
       </div>
 
-      {/* Lots */}
       <div className="space-y-4">
         <h2 className="font-semibold text-lg">Lots de fabrication</h2>
         {workOrder.lots.map((lot) => {
-          const currentStatus = lotStatuses[lot.id]
-          const currentProgress = lotProgress[lot.id]
+          const currentStatus = getLotStatus(lot.id, lot.status)
+          const currentProgress = getLotProgress(lot.id, lot.completionPercent)
 
           return (
             <Card key={lot.id}>
@@ -105,12 +118,11 @@ export function OrderDetailPage() {
                   <div className="flex items-center gap-2">
                     <Select
                       value={currentStatus}
-                      onChange={(e) =>
-                        setLotStatuses((prev) => ({
-                          ...prev,
-                          [lot.id]: e.target.value as LotStatus,
-                        }))
-                      }
+                      onChange={(e) => {
+                        const s = e.target.value as LotStatus
+                        setLotStatuses((prev) => ({ ...prev, [lot.id]: s }))
+                        updateLot.mutate({ lotId: lot.id, status: s, completionPercent: currentProgress })
+                      }}
                       className="w-36 text-xs h-8"
                     >
                       <option value="planned">Planifié</option>
@@ -123,7 +135,6 @@ export function OrderDetailPage() {
               </CardHeader>
 
               <CardContent className="space-y-5">
-                {/* Progress */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Avancement</span>
@@ -146,7 +157,6 @@ export function OrderDetailPage() {
                   />
                 </div>
 
-                {/* Machine & quantity */}
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   <div className="flex items-center gap-2 rounded-lg bg-secondary p-3">
                     <Cpu className="h-4 w-4 text-muted-foreground" />
@@ -171,7 +181,6 @@ export function OrderDetailPage() {
                   </div>
                 </div>
 
-                {/* Materials */}
                 <div>
                   <h3 className="text-sm font-semibold mb-2">Matières premières</h3>
                   <div className="rounded-lg border border-border overflow-hidden">
@@ -207,7 +216,6 @@ export function OrderDetailPage() {
                   </div>
                 </div>
 
-                {/* Action */}
                 <div className="flex justify-end gap-2">
                   <Link to={`/incident/new?lot=${lot.id}`}>
                     <Button variant="outline" size="sm" className="gap-2">
@@ -217,10 +225,12 @@ export function OrderDetailPage() {
                   </Link>
                   <Button
                     size="sm"
-                    onClick={() =>
-                      setLotStatuses((prev) => ({ ...prev, [lot.id]: 'done' }))
-                    }
                     disabled={currentStatus === 'done'}
+                    onClick={() => {
+                      setLotStatuses((prev) => ({ ...prev, [lot.id]: 'done' }))
+                      setLotProgress((prev) => ({ ...prev, [lot.id]: 100 }))
+                      updateLot.mutate({ lotId: lot.id, status: 'done', completionPercent: 100 })
+                    }}
                   >
                     <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
                     Marquer terminé

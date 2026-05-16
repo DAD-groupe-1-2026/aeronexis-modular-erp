@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { ClipboardList, AlertTriangle, CheckCircle2, ArrowUpRight, Search } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/form'
-import { mockHistory } from '@/data/mock'
+import { useHistory } from '@/hooks/queries/useHistory'
+import type { HistoryEntry } from '@aeronexis-dynamics/shared-types'
 
 const actionIcon: Record<string, React.ReactNode> = {
   'Statut mis à jour': <ClipboardList className="h-4 w-4 text-blue-500" />,
@@ -12,8 +13,8 @@ const actionIcon: Record<string, React.ReactNode> = {
   'Incident résolu': <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
 }
 
-function groupByDate(entries: typeof mockHistory) {
-  const groups: Record<string, typeof mockHistory> = {}
+function groupByDate(entries: HistoryEntry[]) {
+  const groups: Record<string, HistoryEntry[]> = {}
   for (const entry of entries) {
     const date = new Date(entry.performedAt).toLocaleDateString('fr-FR', {
       weekday: 'long',
@@ -28,9 +29,10 @@ function groupByDate(entries: typeof mockHistory) {
 }
 
 export function HistoryPage() {
+  const { data: history = [], isLoading } = useHistory()
   const [search, setSearch] = useState('')
 
-  const filtered = mockHistory.filter(
+  const filtered = history.filter(
     (entry) =>
       entry.action.toLowerCase().includes(search.toLowerCase()) ||
       entry.target.toLowerCase().includes(search.toLowerCase()) ||
@@ -39,12 +41,16 @@ export function HistoryPage() {
 
   const grouped = groupByDate(filtered)
 
+  if (isLoading) {
+    return <div className="p-8 text-sm text-muted-foreground">Chargement de l'historique...</div>
+  }
+
   return (
     <div className="p-8 space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Historique</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Toutes les actions réalisées par Martin Dupont – {mockHistory.length} entrées
+          Toutes les actions enregistrées – {history.length} entrées
         </p>
       </div>
 
@@ -71,7 +77,10 @@ export function HistoryPage() {
             <Card>
               <CardContent className="p-0 divide-y divide-border">
                 {entries.map((entry) => (
-                  <div key={entry.id} className="flex items-start gap-4 p-4 hover:bg-muted/30 transition-colors">
+                  <div
+                    key={entry.id}
+                    className="flex items-start gap-4 p-4 hover:bg-muted/30 transition-colors"
+                  >
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary mt-0.5">
                       {actionIcon[entry.action] ?? <ClipboardList className="h-4 w-4 text-muted-foreground" />}
                     </div>

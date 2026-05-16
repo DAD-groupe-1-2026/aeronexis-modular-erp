@@ -11,46 +11,45 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { mockWorkOrders, mockIncidents } from '@/data/mock'
-
-const allLots = mockWorkOrders.flatMap((wo) => wo.lots)
-
-const stats = {
-  total: allLots.length,
-  planned: allLots.filter((l) => l.status === 'planned').length,
-  inProgress: allLots.filter((l) => l.status === 'in_progress').length,
-  done: allLots.filter((l) => l.status === 'done').length,
-  openIncidents: mockIncidents.filter((i) => !i.resolved).length,
-}
-
-const urgentOrders = mockWorkOrders.filter((wo) => wo.priority === 'urgent' && wo.status !== 'done')
-const activeIncidents = mockIncidents.filter((i) => !i.resolved)
-
-function severityBadge(severity: string) {
-  const map: Record<string, 'warning' | 'destructive' | 'secondary'> = {
-    low: 'secondary',
-    medium: 'warning',
-    high: 'destructive',
-    critical: 'destructive',
-  }
-  const labels: Record<string, string> = {
-    low: 'Faible',
-    medium: 'Moyenne',
-    high: 'Haute',
-    critical: 'Critique',
-  }
-  return <Badge variant={map[severity] ?? 'secondary'}>{labels[severity] ?? severity}</Badge>
-}
+import { IncidentBadge } from '@/components/domain/IncidentBadge'
+import { useOrders } from '@/hooks/queries/useOrders'
+import { useIncidents } from '@/hooks/queries/useIncidents'
 
 export function DashboardPage() {
+  const { data: orders = [], isLoading: ordersLoading } = useOrders()
+  const { data: incidents = [], isLoading: incidentsLoading } = useIncidents()
+
+  const allLots = orders.flatMap((wo) => wo.lots)
+  const stats = {
+    total: allLots.length,
+    inProgress: allLots.filter((l) => l.status === 'in_progress').length,
+    done: allLots.filter((l) => l.status === 'done').length,
+    openIncidents: incidents.filter((i) => !i.resolved).length,
+  }
+  const urgentOrders = orders.filter((wo) => wo.priority === 'urgent' && wo.status !== 'done')
+  const activeIncidents = incidents.filter((i) => !i.resolved)
+
+  if (ordersLoading || incidentsLoading) {
+    return (
+      <div className="p-8 text-sm text-muted-foreground">Chargement du tableau de bord...</div>
+    )
+  }
+
   return (
     <div className="p-8 space-y-8">
       <div>
         <h1 className="text-2xl font-bold">Tableau de bord</h1>
-        <p className="text-muted-foreground text-sm mt-1">Vue d'ensemble de la journée – {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+        <p className="text-muted-foreground text-sm mt-1">
+          Vue d'ensemble de la journée –{' '}
+          {new Date().toLocaleDateString('fr-FR', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })}
+        </p>
       </div>
 
-      {/* KPI cards */}
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         <Card>
           <CardContent className="pt-6">
@@ -65,7 +64,6 @@ export function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
@@ -79,7 +77,6 @@ export function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
@@ -93,7 +90,6 @@ export function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
@@ -110,7 +106,6 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        {/* Urgent orders */}
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -159,15 +154,12 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Active incidents */}
         <Card>
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <AlertTriangle className="h-4 w-4 text-amber-500" />
-                Incidents non résolus
-              </CardTitle>
-            </div>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              Incidents non résolus
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {activeIncidents.length === 0 && (
@@ -177,12 +169,15 @@ export function DashboardPage() {
               <div key={inc.id} className="rounded-lg border border-border p-4 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-sm">{inc.lotReference}</span>
-                  {severityBadge(inc.severity)}
+                  <IncidentBadge severity={inc.severity} />
                 </div>
                 <p className="text-xs text-muted-foreground line-clamp-2">{inc.description}</p>
                 <p className="text-xs text-muted-foreground">
                   {new Date(inc.reportedAt).toLocaleDateString('fr-FR', {
-                    day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
+                    day: 'numeric',
+                    month: 'long',
+                    hour: '2-digit',
+                    minute: '2-digit',
                   })}
                 </p>
               </div>

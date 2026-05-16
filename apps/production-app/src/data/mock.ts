@@ -1,4 +1,4 @@
-import type { WorkOrder, Incident, HistoryEntry } from '@/types'
+import type { WorkOrder, Incident, HistoryEntry } from '@aeronexis-dynamics/shared-types'
 
 export const mockWorkOrders: WorkOrder[] = [
   {

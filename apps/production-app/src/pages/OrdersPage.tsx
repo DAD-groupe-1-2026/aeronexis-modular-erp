@@ -3,11 +3,10 @@ import { Link } from 'react-router-dom'
 import { Search, Flame, ChevronRight } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/form'
-import { Select } from '@/components/ui/form'
+import { Input, Select } from '@/components/ui/form'
 import { Progress } from '@/components/ui/progress'
-import { mockWorkOrders } from '@/data/mock'
-import type { LotStatus } from '@/types'
+import { useOrders } from '@/hooks/queries/useOrders'
+import type { LotStatus } from '@aeronexis-dynamics/shared-types'
 
 const statusLabel: Record<LotStatus, string> = {
   planned: 'Planifié',
@@ -22,11 +21,12 @@ const statusVariant: Record<LotStatus, 'secondary' | 'warning' | 'success'> = {
 }
 
 export function OrdersPage() {
+  const { data: orders = [], isLoading } = useOrders()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<LotStatus | 'all'>('all')
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'urgent' | 'normal'>('all')
 
-  const filtered = mockWorkOrders.filter((wo) => {
+  const filtered = orders.filter((wo) => {
     const matchSearch =
       wo.reference.toLowerCase().includes(search.toLowerCase()) ||
       wo.clientName.toLowerCase().includes(search.toLowerCase())
@@ -35,14 +35,17 @@ export function OrdersPage() {
     return matchSearch && matchStatus && matchPriority
   })
 
+  if (isLoading) {
+    return <div className="p-8 text-sm text-muted-foreground">Chargement des ordres...</div>
+  }
+
   return (
     <div className="p-8 space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Ordres de fabrication</h1>
-        <p className="text-sm text-muted-foreground mt-1">{mockWorkOrders.length} ordres au total</p>
+        <p className="text-sm text-muted-foreground mt-1">{orders.length} ordres au total</p>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -74,7 +77,6 @@ export function OrdersPage() {
         </Select>
       </div>
 
-      {/* Order list */}
       <div className="space-y-4">
         {filtered.length === 0 && (
           <p className="text-center text-muted-foreground py-12">Aucun ordre trouvé.</p>
@@ -96,15 +98,14 @@ export function OrdersPage() {
                             <Flame className="h-3 w-3" /> Urgent
                           </Badge>
                         )}
-                        <Badge variant={statusVariant[wo.status]}>
-                          {statusLabel[wo.status]}
-                        </Badge>
+                        <Badge variant={statusVariant[wo.status]}>{statusLabel[wo.status]}</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">{wo.clientName}</p>
-
                       <div className="space-y-1.5">
                         <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">{doneLots} / {totalLots} lots terminés</span>
+                          <span className="text-muted-foreground">
+                            {doneLots} / {totalLots} lots terminés
+                          </span>
                           <span className="font-medium">{Math.round(avgProgress)}%</span>
                         </div>
                         <Progress
@@ -112,13 +113,10 @@ export function OrdersPage() {
                           indicatorClassName={wo.status === 'done' ? 'bg-emerald-500' : undefined}
                         />
                       </div>
-
                       <div className="flex gap-4 text-xs text-muted-foreground">
                         <span>Créé le {new Date(wo.createdAt).toLocaleDateString('fr-FR')}</span>
                         <span>Échéance : {new Date(wo.dueDate).toLocaleDateString('fr-FR')}</span>
                       </div>
-
-                      {/* Lot chips */}
                       <div className="flex flex-wrap gap-1.5">
                         {wo.lots.map((lot) => (
                           <span
