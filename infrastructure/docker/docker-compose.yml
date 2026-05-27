@@ -1,150 +1,49 @@
-version: '3.8'
-
 services:
-  # -----------------------------------
-  # DATABASES
-  # -----------------------------------
   postgres:
-    image: postgres:15
+    image: postgres:17-alpine
+    container_name: erp-postgres
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: aeronexis_db
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ../databases/sql:/docker-entrypoint-initdb.d
+      - pgdata:/var/lib/postgresql/data
     networks:
       - aeronexis-network
 
   mongodb:
     image: mongo:6
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
+    container_name: erp-mongodb
     ports:
       - "27017:27017"
     volumes:
-      - mongodb_data:/data/db
-      - ../databases/nosql:/docker-entrypoint-initdb.d
+      - mongodata:/data/db
+    networks:
+      - aeronexis-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: erp-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
     networks:
       - aeronexis-network
 
   redis:
     image: redis:7-alpine
+    container_name: erp-redis
     ports:
       - "6379:6379"
     networks:
       - aeronexis-network
 
-  # -----------------------------------
-  # MESSAGE BROKER
-  # -----------------------------------
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    ports:
-      - "5672:5672"   # AMQP protocol
-      - "15672:15672" # Management UI (http://localhost:15672)
-    environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: password
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - aeronexis-network
-
-  # -----------------------------------
-  # COUCHE 3 : API GATEWAY (NGINX)
-  # Point d'entrée unique — port 80
-  # -----------------------------------
-  api-gateway:
-    build:
-      context: ../../
-      dockerfile: services/api-gateway/Dockerfile
-    ports:
-      - "80:80"
-    depends_on:
-      - auth-service
-      - production-service
-    networks:
-      - aeronexis-network
-
-  # -----------------------------------
-  # COUCHE 4 : MICROSERVICES
-  # -----------------------------------
-  auth-service:
-    build:
-      context: ../../
-      dockerfile: services/auth-service/Dockerfile
-    ports:
-      - "3001:3001"
-    environment:
-      DATABASE_URL: postgresql://admin:password@postgres:5432/aeronexis_db
-      DB_SCHEMA: auth
-      JWT_SECRET: changeme-in-production
-      JWT_EXPIRES_IN: 1h
-      BCRYPT_ROUNDS: 10
-      PORT: 3001
-    depends_on:
-      - postgres
-    networks:
-      - aeronexis-network
-
-  production-service:
-    build:
-      context: ../../
-      dockerfile: services/production-service/Dockerfile
-    ports:
-      - "3002:3002"
-    environment:
-      DATABASE_URL: postgresql://admin:password@postgres:5432/aeronexis_db
-      DB_SCHEMA: production
-      RABBITMQ_URL: amqp://admin:password@rabbitmq:5672
-      PORT: 3002
-    depends_on:
-      - postgres
-      - rabbitmq
-    networks:
-      - aeronexis-network
-
-  # -----------------------------------
-  # MONITORING
-  # -----------------------------------
-  prometheus:
-    image: prom/prometheus:latest
-    ports:
-      - "9090:9090"
-    volumes:
-      - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.enable-lifecycle'
-    networks:
-      - aeronexis-network
-
-  grafana:
-    image: grafana/grafana:latest
-    ports:
-      - "3000:3000"
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: password
-    volumes:
-      - grafana_data:/var/lib/grafana
-    depends_on:
-      - prometheus
-    networks:
-      - aeronexis-network
-
+# Déclaration des volumes gérés par Docker Compose
 volumes:
-  postgres_data:
-  mongodb_data:
-  rabbitmq_data:
-  prometheus_data:
-  grafana_data:
+  pgdata:      # <-- Notez que "external: true" a disparu
+  mongodata:
 
 networks:
   aeronexis-network:
