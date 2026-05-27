@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '@aeronexis-dynamics/api-client'
 import type { User } from '@aeronexis-dynamics/shared-types'
+import { isAuthBypassed } from './authConfig'
 import { useAuthStore } from './useAuthStore'
 
 interface LoginResponse {
@@ -12,6 +13,10 @@ interface LoginResponse {
 export function LoginPage() {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
+
+  useEffect(() => {
+    if (isAuthBypassed()) navigate('/', { replace: true })
+  }, [navigate])
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
