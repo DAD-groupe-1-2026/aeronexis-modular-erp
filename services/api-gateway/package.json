@@ -2,29 +2,5 @@
   "name": "@aeronexis-dynamics/api-gateway",
   "version": "1.0.0",
   "private": true,
-  "description": "API Gateway - Façade unique, contrôleur de résolution, proxy/orchestration",
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/main",
-    "start:dev": "ts-node src/main.ts"
-  },
-  "dependencies": {
-    "@nestjs/common": "^10.4.19",
-    "@nestjs/core": "^10.4.19",
-    "@nestjs/platform-express": "^10.4.19",
-    "@nestjs/jwt": "^10.2.0",
-    "@nestjs/passport": "^10.0.3",
-    "express-http-proxy": "^2.1.1",
-    "passport": "^0.7.0",
-    "passport-jwt": "^4.0.1",
-    "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
-  },
-  "devDependencies": {
-    "@types/express-http-proxy": "^1.6.6",
-    "@types/node": "^22.15.21",
-    "@types/passport-jwt": "^4.0.1",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
-  }
+  "description": "API Gateway — NGINX reverse proxy, JWT validation middleware, routing"
 }

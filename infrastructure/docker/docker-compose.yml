@@ -55,6 +55,60 @@ services:
       - aeronexis-network
 
   # -----------------------------------
+  # COUCHE 3 : API GATEWAY (NGINX)
+  # Point d'entrée unique — port 80
+  # -----------------------------------
+  api-gateway:
+    build:
+      context: ../../
+      dockerfile: services/api-gateway/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - auth-service
+      - production-service
+    networks:
+      - aeronexis-network
+
+  # -----------------------------------
+  # COUCHE 4 : MICROSERVICES
+  # -----------------------------------
+  auth-service:
+    build:
+      context: ../../
+      dockerfile: services/auth-service/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://admin:password@postgres:5432/aeronexis_db
+      DB_SCHEMA: auth
+      JWT_SECRET: changeme-in-production
+      JWT_EXPIRES_IN: 1h
+      BCRYPT_ROUNDS: 10
+      PORT: 3001
+    depends_on:
+      - postgres
+    networks:
+      - aeronexis-network
+
+  production-service:
+    build:
+      context: ../../
+      dockerfile: services/production-service/Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      DATABASE_URL: postgresql://admin:password@postgres:5432/aeronexis_db
+      DB_SCHEMA: production
+      RABBITMQ_URL: amqp://admin:password@rabbitmq:5672
+      PORT: 3002
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - aeronexis-network
+
+  # -----------------------------------
   # MONITORING
   # -----------------------------------
   prometheus:
@@ -74,7 +128,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     ports:
-      - "3001:3000"
+      - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: password
@@ -82,23 +136,6 @@ services:
       - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
-    networks:
-      - aeronexis-network
-
-  # -----------------------------------
-  # SERVICES (Placeholders for now)
-  # -----------------------------------
-  api-gateway:
-    build:
-      context: ../../
-      dockerfile: services/api-gateway/Dockerfile
-    ports:
-      - "3000:3000"
-    depends_on:
-      - postgres
-      - mongodb
-      - redis
-      - rabbitmq
     networks:
       - aeronexis-network
 

@@ -1,8 +1,7 @@
-// ─── Couche 3 : Gateway — Contrats façade / contrôleur de résolution ─────────
+// ─── Couche 3 : Gateway — Contrats NGINX / auth_request ──────────────────────
 
 /**
- * Table de routage du ProxyService : associe un nom de service
- * à son URL cible dans la couche 4 (microservices).
+ * Noms des microservices routés par NGINX (upstreams définis dans nginx.conf).
  */
 export type ServiceName =
   | 'auth'
@@ -12,14 +11,10 @@ export type ServiceName =
   | 'traceability'
   | 'notifications'
 
-export interface ServiceRoute {
-  name: ServiceName
-  url: string
-}
-
 /**
- * Requête enrichie après passage par le contrôleur de résolution (JwtGuard).
- * Disponible dans tous les handlers du gateway via req.user.
+ * Payload JWT décodé, transmis aux microservices (couche 4) via le header
+ * X-User injecté par NGINX après validation par auth-service /auth/verify.
+ * Disponible dans les handlers Express via req.user (après parsing du header).
  */
 export interface ResolvedRequest {
   userId: string

@@ -23,19 +23,18 @@ flowchart TD
     end
 
     subgraph C3 [Couche 3 — Plateforme / Gateway]
-        FACADE[Façade\nEndpoint unique /api/*]
-        RESOLVER[Contrôleur de résolution\nVérif JWT + routage]
-        PROXY[Proxy / Orchestration\nLoad-balancing + transactions]
+        NGINX[NGINX\nReverse proxy — port 80]
+        VERIFY[auth_request\nValidation JWT → auth-service]
+        UPSTREAM[Upstreams\nLoad-balancing vers microservices]
     end
 
     subgraph C4 [Couche 4 — Microservices + Data]
-        AS[auth-service]
-        PS[production-service]
+        AS[auth-service\nExpress + Sequelize]
+        PS[production-service\nExpress + Sequelize]
         LS[logistics-service]
         SS[sales-service]
         TS[traceability-service]
         NS[notification-service]
-        AI[ai-agent-service]
         PG[(PostgreSQL)]
         MG[(MongoDB)]
         RD[(Redis)]
@@ -44,9 +43,9 @@ flowchart TD
 
     C1 -->|"HTTP via api-client\n{ status, data, error }"| C3
     C2 -->|modules partagés| C1
-    FACADE --> RESOLVER
-    RESOLVER --> PROXY
-    PROXY --> C4
+    NGINX --> VERIFY
+    VERIFY -->|JWT valide → X-User header| UPSTREAM
+    UPSTREAM --> C4
     PS -->|events| RB
     LS -->|events| RB
     SS -->|events| RB
@@ -66,25 +65,24 @@ flowchart TD
 
 ```
 aeronexis-modular-erp/
-├── apps/                    # Couche 1 : Applications métiers
+├── apps/                        # Couche 1 : Applications métiers
 │   ├── production-app/
 │   ├── logistics-app/
 │   ├── sales-app/
 │   └── admin-dashboard/
-├── packages/                # Couche 2 : Middleware applicatif partagé
-│   ├── auth/                # Sécurisation flux locaux + gestion des droits
-│   ├── api-client/          # Normalisation messages + couche HTTP
-│   ├── shared-types/        # Contrats inter-couches (types, DTOs, interfaces gateway)
-│   └── ui-components/       # Composants UI modulaires interchangeables
-├── services/                # Couches 3 & 4 : Plateforme + Microservices
-│   ├── api-gateway/         # Couche 3 : Façade, contrôleur de résolution, proxy
-│   ├── auth-service/        # Couche 4 : Authentification JWT, RBAC
-│   ├── production-service/  # Couche 4 : Ordres de fabrication, lots, incidents
-│   ├── logistics-service/   # Couche 4 : Stocks, réservations, expéditions
-│   ├── sales-service/       # Couche 4 : Commandes clients, statistiques
-│   ├── traceability-service/# Couche 4 : Audit trail immuable (consommateur RabbitMQ)
-│   ├── notification-service/# Couche 4 : Alertes temps réel WebSocket (consommateur RabbitMQ)
-│   └── ai-agent-service/    # Couche 4 : Prédiction, détection d'anomalies
+├── packages/                    # Couche 2 : Middleware applicatif partagé
+│   ├── auth/                    # Sécurisation flux locaux + gestion des droits
+│   ├── api-client/              # Normalisation messages + couche HTTP
+│   ├── shared-types/            # Contrats inter-couches (types, DTOs, interfaces)
+│   └── ui-components/           # Composants UI modulaires interchangeables
+├── services/                    # Couches 3 & 4 : Plateforme + Microservices
+│   ├── api-gateway/             # Couche 3 : NGINX (nginx.conf + Dockerfile)
+│   ├── auth-service/            # Couche 4 : Express + Sequelize — JWT, RBAC
+│   ├── production-service/      # Couche 4 : Express + Sequelize — Orders, Lots, Incidents
+│   ├── logistics-service/       # Couche 4 : Stocks, réservations, expéditions
+│   ├── sales-service/           # Couche 4 : Commandes clients, statistiques
+│   ├── traceability-service/    # Couche 4 : Audit trail immuable (consommateur RabbitMQ)
+│   └── notification-service/    # Couche 4 : Alertes temps réel (consommateur RabbitMQ)
 ├── infrastructure/
 │   ├── docker/
 │   │   └── docker-compose.yml
@@ -146,13 +144,13 @@ export async function getOrders(): Promise<WorkOrder[]> {
 
 ## Couche 2 — Middleware applicatif (`packages/`)
 
-Modules partagés entre toutes les applications. Ils constituent la couche intermédiaire entre la présentation et la communication avec la plateforme.
+Modules partagés entre toutes les applications.
 
 | Package | Rôle dans la couche 2 |
 |---|---|
 | `auth` | Sécurisation des flux locaux : `LoginPage`, `ProtectedRoute`, `useAuthStore` (JWT), `isAuthBypassed` (bypass dev) |
 | `api-client` | Normalisation des messages `{ status, data, error }` + injection JWT + gestion des erreurs réseau |
-| `shared-types` | Contrats TypeScript inter-couches : entités métier, `ApiResponse<T>`, `NormalizedMessage<T>`, types gateway (`ServiceRoute`, `ResolvedRequest`) |
+| `shared-types` | Contrats TypeScript inter-couches : entités métier, `ApiResponse<T>`, `NormalizedMessage<T>`, `ResolvedRequest` (payload JWT transmis par NGINX) |
 | `ui-components` | Composants UI modulaires : contrats de props `ButtonProps`, `CardProps`, `BadgeProps` — chaque app fournit son implémentation Tailwind locale |
 
 ### Normalisation des messages
@@ -173,95 +171,125 @@ export type NormalizedMessage<T> = ApiResponse<T>
 
 ---
 
-## Couche 3 — Plateforme / Gateway (`services/api-gateway/`)
+## Couche 3 — API Gateway (`services/api-gateway/`)
 
-L'API Gateway est le **point d'entrée unique** de toute communication entre les applications et la plateforme. Il est composé de 3 sous-composants internes.
+L'API Gateway est le **point d'entrée unique** à port 80, implémenté avec **NGINX**.
+Il n'exécute aucune logique applicative : il route, valide les JWT via `auth_request`, et transmet.
 
 ```
-services/api-gateway/src/
-├── facade/
-│   └── gateway.controller.ts  # Façade unique — exposition de tous les services
-├── resolver/
-│   ├── jwt.guard.ts            # Contrôleur de résolution — vérification JWT
-│   └── auth.middleware.ts      # Contrôleur de résolution — extraction des claims
-└── proxy/
-    └── proxy.service.ts        # Proxy / Orchestration — routage vers microservices
+services/api-gateway/
+├── nginx.conf    # Configuration complète : upstreams, routes, auth_request, erreurs normalisées
+├── Dockerfile    # Image nginx:1.25-alpine
+└── .env          # Documentation des hosts/ports des microservices
 ```
 
-### 3.1 Façade (`facade/gateway.controller.ts`)
+### Routage (nginx.conf)
 
-Expose tous les services de la plateforme via un endpoint unique. Chaque préfixe de route correspond à un microservice de la couche 4 :
+| Location | Accès | Service cible |
+|---|---|---|
+| `/auth/login` | Public | `auth-service:3001` |
+| `/auth/register` | Public | `auth-service:3001` |
+| `/auth/verify` | Interne (auth_request) | `auth-service:3001` |
+| `/api/production/*` | JWT requis | `production-service:3002` |
+| `/api/logistics/*` | JWT requis | `logistics-service:3003` |
+| `/api/sales/*` | JWT requis | `sales-service:3004` |
+| `/api/traceability/*` | JWT requis | `traceability-service:3005` |
+| `/api/notifications/*` | JWT requis | `notification-service:3006` |
 
-| Route | Service cible |
-|---|---|
-| `POST /auth/login` | `auth-service` (public) |
-| `* /api/production/*` | `production-service` |
-| `* /api/logistics/*` | `logistics-service` |
-| `* /api/sales/*` | `sales-service` |
-| `* /api/traceability/*` | `traceability-service` |
-| `* /api/notifications/*` | `notification-service` |
+### Mécanisme d'authentification
 
-### 3.2 Contrôleur de résolution (`resolver/`)
+```
+[Client] → GET /api/production/orders
+               │
+               ↓ NGINX : auth_request /_jwt_verify
+               │
+               ↓ GET http://auth-service:3001/auth/verify
+                       (avec Authorization: Bearer <token>)
+               │
+               ├── 401 → NGINX retourne { status: "failure", error: "UNAUTHORIZED" }
+               │
+               └── 200 + header X-User: {"userId","email","role",...}
+                       → NGINX injecte X-User dans la requête en aval
+                       → proxy_pass http://production-service:3002/api/production/orders
+```
 
-Vérifie les droits utilisateur avant tout routage :
-- **`AuthMiddleware`** : extrait et décode le JWT sur toutes les requêtes, attache le payload (`userId`, `role`) à `req.user`
-- **`JwtGuard`** : valide le token sur les routes protégées ; rejette avec `401 Unauthorized` si invalide ou absent
-
-### 3.3 Proxy / Orchestration (`proxy/proxy.service.ts`)
-
-Route les requêtes vers le microservice approprié via `express-http-proxy` :
-- Maintient la table de routage `ServiceRoute[]` (chargée depuis les variables d'environnement)
-- Transmet les en-têtes d'authentification (`x-user`) au service cible
-- Normalise les erreurs de communication réseau au format `{ status: 'failure', error: { code: 'PROXY_ERROR' } }`
+Les microservices **ne valident pas eux-mêmes le JWT** : ils lisent simplement le header `X-User` injecté par NGINX.
 
 ---
 
 ## Couche 4 — Microservices + Data (`services/` + `infrastructure/`)
 
+### Structure interne d'un microservice (pattern Express + Sequelize)
+
+```
+services/<nom>-service/
+├── src/
+│   ├── index.js              # Bootstrap Express : connexion Sequelize, montage des routes
+│   ├── db/
+│   │   ├── sequelize.js      # Instance Sequelize (DATABASE_URL + schéma SQL)
+│   │   └── migrate.js        # Création du schéma SQL + sync des modèles (node src/db/migrate.js)
+│   ├── models/
+│   │   └── index.js          # Définition des modèles Sequelize + associations
+│   ├── controllers/          # Logique métier — retournent { status, data, error }
+│   ├── routes/               # Déclaration des routes Express + authenticate middleware
+│   └── middlewares/
+│       └── authenticate.js   # Lit le header X-User injecté par NGINX → req.user
+├── package.json              # Dépendances : express, sequelize, pg, dotenv, cors
+├── Dockerfile
+└── .env
+```
+
+**Référence** : `auth-service` pour l'authentification, `production-service` pour un domaine métier.
+
+### Middlewares Express
+
+- **`authenticate.js`** : lit le header `X-User` (JSON stringifié) injecté par NGINX et l'attache à `req.user`. Toutes les routes métiers l'utilisent.
+- **`auth-service/src/middlewares/authenticate.js`** : exception — vérifie lui-même le JWT Bearer car il gère aussi la route `/auth/verify` utilisée par NGINX.
+
 ### Microservices
 
-Chaque microservice est indépendant, conteneurisable et exposé uniquement via le gateway.
+| Service | Port | Base de données | Rôle |
+|---|---|---|---|
+| `auth-service` | 3001 | PostgreSQL (`schema: auth`) | Login, register, verify JWT, RBAC |
+| `production-service` | 3002 | PostgreSQL (`schema: production`) | WorkOrder, Lot, Material, Incident, HistoryEntry |
+| `logistics-service` | 3003 | PostgreSQL | StockItem, Shipment, réservations |
+| `sales-service` | 3004 | PostgreSQL | SalesOrder, Client, statistiques |
+| `traceability-service` | 3005 | MongoDB | Audit trail immuable — consommateur RabbitMQ |
+| `notification-service` | 3006 | Redis | WebSocket temps réel — consommateur RabbitMQ |
 
-| Service | Base de données | Rôle |
-|---|---|---|
-| `auth-service` | PostgreSQL (`schema: auth`) | Authentification JWT, RBAC, gestion des utilisateurs |
-| `production-service` | PostgreSQL (`schema: production`) | WorkOrder, Lot, Material, Incident, HistoryEntry |
-| `logistics-service` | PostgreSQL | StockItem, Shipment, réservations de matières |
-| `sales-service` | PostgreSQL | SalesOrder, Client, statistiques commerciales |
-| `traceability-service` | MongoDB | Audit trail immuable — consommateur RabbitMQ |
-| `notification-service` | Redis | WebSocket temps réel — consommateur RabbitMQ |
-| `ai-agent-service` | PostgreSQL + MongoDB | Prédiction, détection d'anomalies |
+### Modèles Sequelize
 
-### Schémas Prisma
+Les schémas SQL sont isolés par microservice (option `schema` de Sequelize) :
+- `auth-service` → schéma SQL `auth` → tables `users`
+- `production-service` → schéma SQL `production` → tables `work_orders`, `lots`, `materials`, `incidents`, `history_entries`
 
-Les services PostgreSQL utilisent Prisma avec des schémas SQL isolés :
-- `auth-service` → `schema.prisma` → schéma SQL `auth`
-- `production-service` → `schema.prisma` → schéma SQL `production`
+Pour initialiser ou mettre à jour les tables : `node src/db/migrate.js`
 
-### Communication asynchrone
+### Communication asynchrone (RabbitMQ)
 
 ```
 [production-service / logistics-service / sales-service]
         │ publish(event)
         ↓
-   [RabbitMQ]
+   [RabbitMQ :5672]
         │
    ┌────┴────┐
    ↓         ↓
 [traceability-service]   [notification-service]
-  → MongoDB (audit)        → Redis → WebSocket → [clients]
+  → MongoDB (audit trail)  → Redis → WebSocket → [clients]
 ```
 
 ### Infrastructure
 
 | Composant | Port | Usage |
 |---|---|---|
+| NGINX (api-gateway) | 80 | Façade unique, reverse proxy, validation JWT |
 | PostgreSQL | 5432 | Données métiers structurées |
 | MongoDB | 27017 | Audit trail et documents |
 | Redis | 6379 | Cache, sessions, WebSocket |
 | RabbitMQ | 5672 / 15672 | Broker événements asynchrones |
 | Prometheus | 9090 | Scraping métriques `/metrics` |
-| Grafana | 3001 | Dashboards de supervision |
+| Grafana | 3000 | Dashboards de supervision |
 
 ---
 
@@ -270,12 +298,12 @@ Les services PostgreSQL utilisent Prisma avec des schémas SQL isolés :
 ### Synchrone (HTTP/REST)
 
 ```
-[App] → NormalizedMessage → api-client → api-gateway (façade)
-                                              → AuthMiddleware (claims)
-                                              → JwtGuard (vérif)
-                                              → ProxyService (routing)
-                                              → [microservice cible]
-                                              → [base de données]
+[App] → NormalizedMessage → api-client → NGINX:80 (api-gateway)
+                                              → auth_request → auth-service /auth/verify
+                                              → proxy_pass (+ X-User header)
+                                              → [microservice cible] :300x
+                                              → authenticate middleware (lit X-User)
+                                              → controller → Sequelize → PostgreSQL
                                        ← { status, data, error } ←
 ```
 
@@ -295,13 +323,14 @@ Les services PostgreSQL utilisent Prisma avec des schémas SQL isolés :
 |---|---|
 | Couche 1 — Front-end | React 18 + TypeScript + Vite + Tailwind CSS |
 | Couche 2 — Packages | TypeScript, Zustand, React Query, React Router |
-| Couche 3 — Gateway | Node.js + NestJS + express-http-proxy + JWT |
-| Couche 4 — Microservices | Node.js + NestJS + Prisma |
-| Couche 4 — Agent IA | Python + FastAPI |
-| Base SQL | PostgreSQL 15 + Prisma (multi-schema) |
+| Couche 3 — Gateway | **NGINX 1.25** (reverse proxy, auth_request, load-balancing) |
+| Couche 4 — Microservices | **Node.js + Express.js** (routes, controllers, middlewares) |
+| ORM | **Sequelize 6** (multi-schema PostgreSQL) |
+| Base SQL | PostgreSQL 15 |
 | Base NoSQL | MongoDB 6 |
 | Cache / Temps réel | Redis 7 |
 | Message broker | RabbitMQ 3 |
+| Sécurité | JWT (jsonwebtoken) + bcrypt |
 | Monitoring | Prometheus + Grafana |
 | Conteneurisation | Docker + Docker Compose |
 
@@ -322,8 +351,11 @@ import type { MonType } from '@aeronexis-dynamics/shared-types'
 
 ### B. Ajouter un endpoint back-end et l'exposer au front
 
-1. **Service** (couche 4) — implémenter dans `services/<nom>-service/src/`
-2. **Gateway** (couche 3) — ajouter la route dans `src/facade/gateway.controller.ts` et le mapping dans `src/proxy/proxy.service.ts`
+1. **Service** (couche 4) — ajouter dans `services/<nom>-service/src/` :
+   - Modèle Sequelize dans `src/models/index.js`
+   - Controller dans `src/controllers/<domaine>.controller.js`
+   - Route dans `src/routes/<domaine>.routes.js`
+2. **Gateway** (couche 3) — la route est automatiquement routée si le préfixe `/api/<service>/` est déjà déclaré dans `nginx.conf`. Sinon, ajouter un nouveau bloc `location` dans `services/api-gateway/nginx.conf`
 3. **Fonction API** (couche 2→1) — ajouter dans `apps/<app>/src/api/<domaine>.ts` :
 ```typescript
 export async function getMaDonnee(): Promise<MaType[]> {
@@ -359,13 +391,13 @@ const MaPage = lazy(() => import('@/pages/MaPage').then((m) => ({ default: m.MaP
 
 ### E. Ajouter un microservice (couche 4)
 
-1. Créer `services/<nom>-service/` avec `package.json` (`@aeronexis-dynamics/<nom>-service`)
-2. Initialiser NestJS + Prisma (voir `auth-service` comme référence)
-3. Ajouter dans `docker-compose.yml` (image, ports, réseau `aeronexis-network`)
-4. Ajouter la cible dans `prometheus.yml`
-5. Ajouter les types dans `packages/shared-types/src/index.ts`
-6. Brancher les routes dans `services/api-gateway/src/facade/gateway.controller.ts`
-7. Ajouter l'URL dans `services/api-gateway/src/proxy/proxy.service.ts`
+1. Créer `services/<nom>-service/` en copiant la structure de `production-service`
+2. Adapter `src/models/index.js` (nouveaux modèles Sequelize)
+3. Mettre à jour `src/db/sequelize.js` avec le bon `DB_SCHEMA`
+4. Ajouter dans `docker-compose.yml` (build, ports, envs, réseau `aeronexis-network`)
+5. Ajouter un bloc `upstream` et un bloc `location` dans `services/api-gateway/nginx.conf`
+6. Ajouter les types dans `packages/shared-types/src/index.ts`
+7. Ajouter la cible dans `infrastructure/monitoring/prometheus.yml`
 
 ---
 
@@ -375,7 +407,7 @@ const MaPage = lazy(() => import('@/pages/MaPage').then((m) => ({ default: m.MaP
 2. Créer `apps/<nom>-app/` en copiant la structure de `production-app`
 3. Déclarer les dépendances `@aeronexis-dynamics/auth`, `api-client`, `shared-types`
 4. Créer `.env.development` avec `VITE_AUTH_BYPASS=true`
-5. Ajouter le rôle dans la logique RBAC de `services/auth-service/`
+5. Ajouter le rôle dans la logique RBAC de `services/auth-service/src/models/User.js`
 
 ---
 
@@ -391,27 +423,33 @@ Les types importés depuis `@aeronexis-dynamics/shared-types` assurent la cohér
 
 | Variable | Valeur | Effet |
 |---|---|---|
-| `VITE_AUTH_BYPASS=true` | `.env.development` | Accès direct aux routes protégées ; utilisateur mock injecté (`packages/auth`) |
+| `VITE_AUTH_BYPASS=true` | `.env.development` | Accès direct aux routes protégées ; utilisateur mock injecté |
 | `VITE_AUTH_BYPASS=false` | test du flux login | Comportement production : redirection vers `/login` si pas de token |
 
 ```bash
-# Démarrer l'infrastructure (base de données, RabbitMQ, monitoring)
+# Démarrer l'infrastructure (bases de données, RabbitMQ, monitoring)
 docker compose -f infrastructure/docker/docker-compose.yml up -d
 
-# Lancer l'application front-end
+# Démarrer l'application front-end
 cd apps/production-app && npm run dev
 
-# Lancer un microservice (après npm install + prisma migrate)
+# Initialiser la base (à faire une fois par service)
+cd services/auth-service && node src/db/migrate.js
+cd services/production-service && node src/db/migrate.js
+
+# Lancer un microservice en développement
 cd services/auth-service && npm run start:dev
+cd services/production-service && npm run start:dev
 ```
 
 ---
 
 ## Sécurité et Scalabilité
 
-- Les microservices ne sont **jamais exposés directement** : toutes les requêtes passent par l'`api-gateway` (couche 3)
-- L'authentification repose sur des **JWT** validés par le `JwtGuard` à chaque requête protégée
-- Les droits sont contrôlés par **RBAC** (rôles : `operator`, `logistics`, `sales`, `director`, `admin`)
-- Chaque service est **conteneurisé indépendamment** et peut être scalé horizontalement
+- Les microservices ne sont **jamais exposés directement** : toutes les requêtes passent par NGINX (port 80)
+- L'authentification repose sur des **JWT** validés par `auth-service /auth/verify` via le mécanisme `auth_request` de NGINX
+- Les droits sont contrôlés par **RBAC** (rôles : `operator`, `logistics`, `sales`, `director`, `admin`) — le champ `role` du payload JWT est transmis via le header `X-User`
+- Chaque service est **conteneurisé indépendamment** et peut être scalé horizontalement (NGINX assure le load-balancing)
 - Le découplage via **RabbitMQ** absorbe les pics de charge sans blocage synchrone
+- Les mots de passe sont hashés avec **bcrypt** — jamais stockés en clair
 - Les secrets sont gérés exclusivement par **variables d'environnement**, jamais versionnés

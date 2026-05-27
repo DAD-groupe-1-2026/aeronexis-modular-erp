@@ -1,12 +1,8 @@
-FROM node:20-alpine
+FROM nginx:1.25-alpine
 
-WORKDIR /app
+# Copier la configuration NGINX
+COPY services/api-gateway/nginx.conf /etc/nginx/nginx.conf
 
-COPY services/api-gateway/package.json ./
-RUN npm install --production
+EXPOSE 80
 
-COPY services/api-gateway/dist ./dist
-
-EXPOSE 3000
-
-CMD ["node", "dist/main"]
+CMD ["nginx", "-g", "daemon off;"]
