@@ -1,1 +1,0 @@
-import{j as r,c as l}from"./index-ealuhlON.js";function n({value:s,className:a,indicatorClassName:e}){return r.jsx("div",{className:l("relative h-2 w-full overflow-hidden rounded-full bg-secondary",a),children:r.jsx("div",{className:l("h-full rounded-full bg-primary transition-all",e),style:{width:`${Math.min(100,Math.max(0,s))}%`}})})}export{n as P};

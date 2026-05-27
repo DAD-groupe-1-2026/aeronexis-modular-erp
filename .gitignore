@@ -1,1 +1,25 @@
-node_modules
+node_modules/
+
+# Environment (secrets)
+.env
+.env.local
+.env.*
+.env.*.local
+!.env.example
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Logs & coverage
+logs/
+*.log
+npm-debug.log*
+coverage/
+.nyc_output
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.idea/
