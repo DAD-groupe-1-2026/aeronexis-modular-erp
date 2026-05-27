@@ -1,3 +1,34 @@
+// ─── Couche 3 : Gateway — Contrats façade / contrôleur de résolution ─────────
+
+/**
+ * Table de routage du ProxyService : associe un nom de service
+ * à son URL cible dans la couche 4 (microservices).
+ */
+export type ServiceName =
+  | 'auth'
+  | 'production'
+  | 'logistics'
+  | 'sales'
+  | 'traceability'
+  | 'notifications'
+
+export interface ServiceRoute {
+  name: ServiceName
+  url: string
+}
+
+/**
+ * Requête enrichie après passage par le contrôleur de résolution (JwtGuard).
+ * Disponible dans tous les handlers du gateway via req.user.
+ */
+export interface ResolvedRequest {
+  userId: string
+  email: string
+  role: Role
+  iat: number
+  exp: number
+}
+
 // ─── Normalized API Response ───────────────────────────────────────────────
 
 export type ApiStatus = 'success' | 'failure' | 'pending'

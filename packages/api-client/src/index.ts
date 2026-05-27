@@ -1,5 +1,20 @@
 import type { ApiResponse, ApiError } from '@aeronexis-dynamics/shared-types'
 
+// ─── Couche 2 : Middleware applicatif — Normalisation des messages ────────────
+//
+// Toutes les communications entre la couche 1 (apps) et la couche 3 (gateway)
+// transitent par ce client. Chaque réponse est normalisée au format :
+//   { status: 'success' | 'failure' | 'pending', data, error? }
+//
+// Ce contrat est partagé avec le backend via @aeronexis-dynamics/shared-types.
+
+/**
+ * Alias explicite pour le format de message normalisé utilisé dans toute
+ * la communication inter-couches. Identique à ApiResponse<T> — le nom
+ * reflète son rôle architectural dans la couche middleware applicatif.
+ */
+export type NormalizedMessage<T> = ApiResponse<T>
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const DEFAULT_BASE_URL = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL) || 'http://localhost:3000'
 
