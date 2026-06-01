@@ -1,0 +1,48 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:3000']
+    metrics_path: '/metrics'
+
+  - job_name: 'auth-service'
+    static_configs:
+      - targets: ['auth-service:3001']
+    metrics_path: '/metrics'
+
+  - job_name: 'production-service'
+    static_configs:
+      - targets: ['production-service:3002']
+    metrics_path: '/metrics'
+
+  - job_name: 'logistics-service'
+    static_configs:
+      - targets: ['logistics-service:3003']
+    metrics_path: '/metrics'
+
+  - job_name: 'sales-service'
+    static_configs:
+      - targets: ['sales-service:3004']
+    metrics_path: '/metrics'
+
+  - job_name: 'traceability-service'
+    static_configs:
+      - targets: ['traceability-service:3005']
+    metrics_path: '/metrics'
+
+  - job_name: 'notification-service'
+    static_configs:
+      - targets: ['notification-service:3006']
+    metrics_path: '/metrics'
+
+  - job_name: 'ai-agent-service'
+    static_configs:
+      - targets: ['ai-agent-service:3007']
+    metrics_path: '/metrics'

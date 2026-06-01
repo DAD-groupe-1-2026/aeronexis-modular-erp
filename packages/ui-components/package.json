@@ -1,0 +1,19 @@
+{
+  "name": "@aeronexis-dynamics/ui-components",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Couche 2 — Composants UI modulaires et interchangeables entre applications",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.23",
+    "typescript": "^5.8.3"
+  },
+  "scripts": {
+    "build": "tsc --declaration --emitDeclarationOnly"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "@aeronexis-dynamics/ai-agent-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Agent Service - AERONEXIS Dynamics",
+  "scripts": {
+    "start": "echo \"start ai-agent\""
+  }
+}

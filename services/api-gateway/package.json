@@ -1,0 +1,6 @@
+{
+  "name": "@aeronexis-dynamics/api-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API Gateway — NGINX reverse proxy, JWT validation middleware, routing"
+}

@@ -1,0 +1,11 @@
+{
+  "name": "aeronexis-dynamics",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo for AERONEXIS Dynamics",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ]
+}
