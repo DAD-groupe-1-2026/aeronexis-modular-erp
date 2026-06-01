@@ -1,101 +1,55 @@
-version: '3.8'
-
 services:
-  # -----------------------------------
-  # DATABASES
-  # -----------------------------------
   postgres:
-    image: postgres:15
+    image: postgres:17-alpine
+    container_name: erp-postgres
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: aeronexis_db
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ../databases/sql:/docker-entrypoint-initdb.d
+      - pgdata:/var/lib/postgresql/data
     networks:
       - aeronexis-network
 
   mongodb:
     image: mongo:6
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
+    container_name: erp-mongodb
     ports:
       - "27017:27017"
     volumes:
-      - mongodb_data:/data/db
-      - ../databases/nosql:/docker-entrypoint-initdb.d
+      - mongodata:/data/db
+    networks:
+      - aeronexis-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: erp-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmqdata:/var/lib/rabbitmq
     networks:
       - aeronexis-network
 
   redis:
     image: redis:7-alpine
+    container_name: erp-redis
     ports:
       - "6379:6379"
-    networks:
-      - aeronexis-network
-
-  # -----------------------------------
-  # MESSAGE BROKER
-  # -----------------------------------
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    ports:
-      - "5672:5672"   # AMQP protocol
-      - "15672:15672" # Management UI (http://localhost:15672)
-    environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: password
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      - redisdata:/data
     networks:
       - aeronexis-network
 
-  # -----------------------------------
-  # MONITORING
-  # -----------------------------------
-  prometheus:
-    image: prom/prometheus:latest
-    ports:
-      - "9090:9090"
-    volumes:
-      - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.enable-lifecycle'
-    networks:
-      - aeronexis-network
-
-  grafana:
-    image: grafana/grafana:latest
-    ports:
-      - "3001:3000"
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: password
-    volumes:
-      - grafana_data:/var/lib/grafana
-    depends_on:
-      - prometheus
-    networks:
-      - aeronexis-network
-
-  # -----------------------------------
-  # SERVICES (Placeholders for now)
-  # -----------------------------------
   api-gateway:
     build:
       context: ../../
       dockerfile: services/api-gateway/Dockerfile
+    container_name: erp-api-gateway
     ports:
-<<<<<<< Updated upstream
-      - "3000:3000"
-=======
       - "80:80"
     depends_on:
       - auth-service
@@ -136,17 +90,12 @@ services:
       DB_SCHEMA: production
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       PORT: 3002
->>>>>>> Stashed changes
     depends_on:
       - postgres
-      - mongodb
-      - redis
       - rabbitmq
     networks:
       - aeronexis-network
 
-<<<<<<< Updated upstream
-=======
   logistics-service:
     build:
       context: ../../
@@ -183,14 +132,11 @@ services:
     networks:
       - aeronexis-network
 
-# Déclaration des volumes gérés par Docker Compose
->>>>>>> Stashed changes
 volumes:
-  postgres_data:
-  mongodb_data:
-  rabbitmq_data:
-  prometheus_data:
-  grafana_data:
+  pgdata:
+  mongodata:
+  rabbitmqdata:
+  redisdata:
 
 networks:
   aeronexis-network:
