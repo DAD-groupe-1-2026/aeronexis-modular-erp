@@ -1,3 +1,29 @@
+// ─── Couche 3 : Gateway — Contrats NGINX / auth_request ──────────────────────
+
+/**
+ * Noms des microservices routés par NGINX (upstreams définis dans nginx.conf).
+ */
+export type ServiceName =
+  | 'auth'
+  | 'production'
+  | 'logistics'
+  | 'sales'
+  | 'traceability'
+  | 'notifications'
+
+/**
+ * Payload JWT décodé, transmis aux microservices (couche 4) via le header
+ * X-User injecté par NGINX après validation par auth-service /auth/verify.
+ * Disponible dans les handlers Express via req.user (après parsing du header).
+ */
+export interface ResolvedRequest {
+  userId: string
+  email: string
+  role: Role
+  iat: number
+  exp: number
+}
+
 // ─── Normalized API Response ───────────────────────────────────────────────
 
 export type ApiStatus = 'success' | 'failure' | 'pending'

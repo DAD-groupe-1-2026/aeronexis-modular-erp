@@ -1,7 +1,22 @@
 import type { ApiResponse, ApiError } from '@aeronexis-dynamics/shared-types'
 
+// ─── Couche 2 : Middleware applicatif — Normalisation des messages ────────────
+//
+// Toutes les communications entre la couche 1 (apps) et la couche 3 (gateway)
+// transitent par ce client. Chaque réponse est normalisée au format :
+//   { status: 'success' | 'failure' | 'pending', data, error? }
+//
+// Ce contrat est partagé avec le backend via @aeronexis-dynamics/shared-types.
+
+/**
+ * Alias explicite pour le format de message normalisé utilisé dans toute
+ * la communication inter-couches. Identique à ApiResponse<T> — le nom
+ * reflète son rôle architectural dans la couche middleware applicatif.
+ */
+export type NormalizedMessage<T> = ApiResponse<T>
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const DEFAULT_BASE_URL = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL) || 'http://localhost:3000'
+const DEFAULT_BASE_URL = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL) || 'http://localhost'
 
 let tokenProvider: (() => string | null) | null = null
 
@@ -22,14 +37,23 @@ function buildHeaders(extra?: HeadersInit): Headers {
 
 async function parseResponse<T>(res: Response): Promise<ApiResponse<T>> {
   if (res.ok) {
-    const data = (await res.json()) as T
-    return { status: 'success', data }
+    const body = await res.json()
+    // Si le backend renvoie déjà le format normalisé ApiResponse, on le retourne tel quel
+    if (body && typeof body === 'object' && 'status' in body && 'data' in body) {
+      return body as ApiResponse<T>
+    }
+    // Sinon, on wrap la donnée (fallback)
+    return { status: 'success', data: body as T }
   }
 
   let error: ApiError = { code: String(res.status), message: res.statusText }
   try {
     const body = await res.json()
-    if (body?.code && body?.message) error = body as ApiError
+    if (body?.error) {
+      error = body.error
+    } else if (body?.code && body?.message) {
+      error = body as ApiError
+    }
   } catch {
     // keep default error
   }

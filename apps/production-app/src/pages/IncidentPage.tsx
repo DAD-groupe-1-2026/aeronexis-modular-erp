@@ -160,7 +160,7 @@ export function IncidentPage() {
         )}
 
         <div className="flex justify-end gap-3">
-          <Link to="/"><Button type="button" variant="outline">Annuler</Button></Link>
+          <Link to="/dashboard"><Button type="button" variant="outline">Annuler</Button></Link>
           <Button
             type="submit"
             disabled={!lotId || !description.trim() || reportIncident.isPending}
