@@ -60,13 +60,23 @@ docker compose up -d --build
 *Le flag `--build` assure que l'image NGINX (API Gateway) et les microservices Node.js sont construits avec les dernières sources de votre code local.*
 
 ### 3. Initialisation et Peuplement de la Base de Données (Seeding)
-Pour que l'authentification et le tableau de bord fonctionnent, il faut exécuter les scripts de seeding qui créent les tables et insèrent des données de démonstration dans la base PostgreSQL conteneurisée :
+Pour que l'authentification et les tableaux de bord fonctionnent, il faut exécuter les scripts de migration (pour créer les schémas et tables) et de seeding (pour insérer les données de démonstration) dans la base PostgreSQL conteneurisée :
 ```bash
-# Pour le service d'authentification (Créera les utilisateurs de test)
+# Service d'authentification (Schéma auth, utilisateurs de test)
+docker exec erp-auth-service npm run db:migrate
 docker exec erp-auth-service npm run db:seed
 
-# Pour le service de production (Créera les ordres de fabrication, lots, incidents)
+# Service de production (Schéma production, ordres de fabrication, lots, incidents)
+docker exec erp-production-service npm run db:migrate
 docker exec erp-production-service npm run db:seed
+
+# Service de logistique (Schéma logistics, stocks, réservations, expéditions)
+docker exec erp-logistics-service npm run db:migrate
+docker exec erp-logistics-service npm run db:seed
+
+# Service des ventes (Schéma sales, clients, commandes)
+docker exec erp-sales-service npm run db:migrate
+docker exec erp-sales-service npm run db:seed
 ```
 
 **Comptes de test disponibles :**
