@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card'
 import { Badge } from '@/components/Badge'
 import { Button } from '@/components/Button'
 import { useIncidentDetail } from '@/hooks/useIncidentDetail'
+import { useResolveIncident } from '@/hooks/useResolveIncident'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
 import type { IncidentSeverity } from '@aeronexis-dynamics/shared-types'
@@ -26,6 +27,7 @@ export function IncidentDetailPage() {
   const { incidentId = '' } = useParams<{ incidentId: string }>()
   const navigate = useNavigate()
   const { data: incident, isLoading, isError, error, refetch } = useIncidentDetail(incidentId)
+  const resolveIncident = useResolveIncident()
   const { data: reporter } = useUserProfile(incident?.reportedBy ?? '')
 
   if (isLoading) {
@@ -77,6 +79,15 @@ export function IncidentDetailPage() {
           <CardTitle className="text-base">Détails de l'incident</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {resolveIncident.isError && (
+            <QueryErrorAlert
+              error={resolveIncident.error}
+              onRetry={() => resolveIncident.reset()}
+              retryLabel="Fermer"
+              title="Échec de la résolution de l'incident"
+            />
+          )}
+
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />
             Signalé le {new Date(incident.reportedAt).toLocaleString('fr-FR')}
@@ -96,9 +107,21 @@ export function IncidentDetailPage() {
                 Incident déjà résolu
               </div>
             ) : (
-              <div className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm text-amber-700">
-                <AlertTriangle className="h-4 w-4" />
-                Incident en attente de résolution
+              <div className="space-y-3">
+                <div className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm text-amber-700">
+                  <AlertTriangle className="h-4 w-4" />
+                  Incident en attente de résolution
+                </div>
+                <div>
+                  <Button
+                    onClick={() => resolveIncident.mutate(incident.id)}
+                    disabled={resolveIncident.isPending}
+                    className="gap-2"
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    {resolveIncident.isPending ? 'Résolution...' : "Marquer comme résolu"}
+                  </Button>
+                </div>
               </div>
             )}
           </div>

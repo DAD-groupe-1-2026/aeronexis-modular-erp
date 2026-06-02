@@ -23,6 +23,12 @@ export async function createIncident(payload: {
   return res.data
 }
 
+export async function resolveIncident(id: string): Promise<Incident> {
+  const res = await apiClient.patch<Incident>(`/api/production/incidents/${id}/resolve`, {})
+  if (res.status === 'failure') throw new Error(res.error?.message)
+  return res.data
+}
+
 export async function getHistory(): Promise<HistoryEntry[]> {
   const res = await apiClient.get<HistoryEntry[]>('/api/production/history')
   if (res.status === 'failure') throw new Error(res.error?.message)
