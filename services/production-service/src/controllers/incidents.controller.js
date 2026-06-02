@@ -1,4 +1,4 @@
-const { Incident } = require('../models')
+const { Incident, Lot } = require('../models')
 
 function ok(res, data) {
   return res.json({ status: 'success', data })
@@ -8,11 +8,23 @@ function fail(res, code, message, status = 500) {
   return res.status(status).json({ status: 'failure', data: null, error: { code, message } })
 }
 
+function withLotReference(incident) {
+  if (!incident) return incident
+  const plain = incident.toJSON ? incident.toJSON() : incident
+  return {
+    ...plain,
+    lotReference: plain.lotReference ?? plain.lot?.reference ?? null,
+  }
+}
+
 // GET /api/production/incidents
 async function list(_req, res) {
   try {
-    const incidents = await Incident.findAll({ order: [['reportedAt', 'DESC']] })
-    ok(res, incidents)
+    const incidents = await Incident.findAll({
+      include: [{ model: Lot, as: 'lot', attributes: ['id', 'reference'] }],
+      order: [['reportedAt', 'DESC']],
+    })
+    ok(res, incidents.map(withLotReference))
   } catch (err) {
     fail(res, 'SERVER_ERROR', err.message)
   }
@@ -21,9 +33,11 @@ async function list(_req, res) {
 // GET /api/production/incidents/:id
 async function getOne(req, res) {
   try {
-    const incident = await Incident.findByPk(req.params.id)
+    const incident = await Incident.findByPk(req.params.id, {
+      include: [{ model: Lot, as: 'lot', attributes: ['id', 'reference'] }],
+    })
     if (!incident) return fail(res, 'NOT_FOUND', 'Incident introuvable', 404)
-    ok(res, incident)
+    ok(res, withLotReference(incident))
   } catch (err) {
     fail(res, 'SERVER_ERROR', err.message)
   }
