@@ -1,5 +1,5 @@
-import { Progress } from '@/components/ui/progress'
-import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/Progress'
+import { Badge } from '@/components/Badge'
 import type { Lot, LotStatus } from '@aeronexis-dynamics/shared-types'
 
 const statusLabel: Record<LotStatus, string> = {

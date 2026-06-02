@@ -62,4 +62,23 @@ async function update(req, res) {
   }
 }
 
-module.exports = { list, getOne, create, update }
+// PATCH /api/production/lots/:id
+async function updateLot(req, res) {
+  try {
+    const lot = await Lot.findByPk(req.params.id)
+    if (!lot) return fail(res, 'NOT_FOUND', 'Lot introuvable', 404)
+    
+    // On met à jour uniquement le status et completionPercent
+    const { status, completionPercent } = req.body
+    const updateData = {}
+    if (status !== undefined) updateData.status = status
+    if (completionPercent !== undefined) updateData.completionPercent = completionPercent
+
+    await lot.update(updateData)
+    ok(res, lot)
+  } catch (err) {
+    fail(res, 'SERVER_ERROR', err.message)
+  }
+}
+
+module.exports = { list, getOne, create, update, updateLot }

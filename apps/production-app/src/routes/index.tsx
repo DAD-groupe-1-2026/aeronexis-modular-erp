@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 import { LoginPage, ProtectedRoute, RoleRedirector } from '@aeronexis-dynamics/auth'
-import { AppLayout } from '@/components/layout/AppLayout'
+import { AppLayout } from '@/AppLayout'
 
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })))
 const OrdersPage = lazy(() => import('@/pages/OrdersPage').then((m) => ({ default: m.OrdersPage })))

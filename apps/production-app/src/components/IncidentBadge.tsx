@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@/components/Badge'
 import type { IncidentSeverity } from '@aeronexis-dynamics/shared-types'
 
 const config: Record<IncidentSeverity, { label: string; variant: 'secondary' | 'warning' | 'destructive' }> = {

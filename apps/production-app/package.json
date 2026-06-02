@@ -23,7 +23,8 @@
     "zustand": "^5.0.2",
     "@aeronexis-dynamics/shared-types": "*",
     "@aeronexis-dynamics/api-client": "*",
-    "@aeronexis-dynamics/auth": "*"
+    "@aeronexis-dynamics/auth": "*",
+    "@aeronexis-dynamics/ui": "*"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",

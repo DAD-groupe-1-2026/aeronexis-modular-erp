@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, AlertTriangle } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Textarea, Select, Label } from '@/components/ui/form'
-import { Badge } from '@/components/ui/badge'
-import { useOrders } from '@/hooks/queries/useOrders'
-import { useReportIncident } from '@/hooks/mutations/useReportIncident'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/Card'
+import { Button } from '@/components/Button'
+import { Textarea, Select, Label } from '@/components/Form'
+import { Badge } from '@/components/Badge'
+import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
+import { useOrders } from '@/hooks/useOrders'
+import { useReportIncident } from '@/hooks/useReportIncident'
 import type { IncidentSeverity } from '@aeronexis-dynamics/shared-types'
 
 const severityConfig: Record<
@@ -22,7 +23,7 @@ const severityConfig: Record<
 export function IncidentPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { data: orders = [] } = useOrders()
+  const { data: orders = [], isError: ordersError, error: ordersErr, refetch: refetchOrders } = useOrders()
   const reportIncident = useReportIncident()
 
   const allLots = orders.flatMap((wo) => wo.lots)
@@ -71,6 +72,14 @@ export function IncidentPage() {
           </p>
         </div>
       </div>
+
+      {ordersError && (
+        <QueryErrorAlert
+          error={ordersErr}
+          onRetry={() => refetchOrders()}
+          title="Erreur lors du chargement des lots"
+        />
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <Card>
@@ -157,6 +166,15 @@ export function IncidentPage() {
               </p>
             </div>
           </div>
+        )}
+
+        {reportIncident.isError && (
+          <QueryErrorAlert
+            error={reportIncident.error}
+            onRetry={() => reportIncident.reset()}
+            retryLabel="Fermer"
+            title="Échec de l'envoi du signalement"
+          />
         )}
 
         <div className="flex justify-end gap-3">

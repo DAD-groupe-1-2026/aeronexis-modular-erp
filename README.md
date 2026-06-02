@@ -26,7 +26,7 @@ L'application est découpée en 4 couches distinctes :
 ```text
 aeronexis-modular-erp/
 ├── apps/                        # Couche 1 : Applications métiers (ex: production-app)
-├── packages/                    # Couche 2 : Modules partagés (auth, api-client, ui-components, shared-types)
+├── packages/                    # Couche 2 : Modules partagés (auth, api-client, ui, shared-types)
 ├── services/                    # Couche 3 & 4 : Microservices
 │   ├── api-gateway/             # Configuration NGINX et Dockerfile
 │   ├── auth-service/            # Microservice d'authentification et gestion JWT (Express/Sequelize)
@@ -35,6 +35,48 @@ aeronexis-modular-erp/
 │   └── docker/                  # Fichier docker-compose.yml global
 └── docs/                        # Documentation détaillée (architecture, conventions)
 ```
+
+---
+
+## 📱 Structure Frontend Simplifiée
+
+Chaque application frontend (dans `apps/`) suit une organisation plate pour une navigation et maintenance facilitées :
+
+```text
+production-app/src/
+├── components/          # Tous les composants React (UI + metier) - un seul niveau
+│   ├── Button.tsx
+│   ├── Card.tsx
+│   ├── Badge.tsx
+│   ├── Form.tsx
+│   ├── Progress.tsx
+│   ├── Sidebar.tsx
+│   ├── LotProgressCard.tsx
+│   └── IncidentBadge.tsx
+├── hooks/               # Tous les custom hooks - un seul niveau
+│   ├── useOrders.ts
+│   ├── useIncidents.ts
+│   ├── useHistory.ts
+│   ├── useLotDetail.ts
+│   ├── useReportIncident.ts
+│   └── useUpdateLotStatus.ts
+├── pages/               # Vues routees (DashboardPage, OrdersPage, etc.)
+├── routes/              # Configuration React Router
+├── api/                 # Fonctions HTTP pures (appellent api-client)
+├── lib/                 # Utilitaires (utils.ts)
+├── AppLayout.tsx        # Structure globale de l'app (sidebar + outlet)
+├── App.tsx              # Point d'entree (providers)
+├── main.tsx
+└── index.css
+```
+
+**Principes :**
+- Pas de sous-dossiers dans `components/` ou `hooks/` - tous les fichiers au même niveau
+- Nomenclature claire : les noms de fichiers sont explicites (ex: `useUpdateLotStatus` vs `useLotDetail`)
+- Imports courts : `import { Button } from '@/components/Button'`
+- `AppLayout.tsx` à la racine de `src/` (composant de structure globale)
+- Séparation claire : `api/` (HTTP) → `hooks/` (React Query) → `pages/` (UI)
+- Composants réutilisables entre apps : `@aeronexis-dynamics/ui` (`QueryErrorAlert`, `getErrorMessage`)
 
 ---
 

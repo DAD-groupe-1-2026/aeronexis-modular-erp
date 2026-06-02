@@ -7,17 +7,20 @@ import {
   ArrowRight,
   Flame,
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
-import { IncidentBadge } from '@/components/domain/IncidentBadge'
-import { useOrders } from '@/hooks/queries/useOrders'
-import { useIncidents } from '@/hooks/queries/useIncidents'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card'
+import { Badge } from '@/components/Badge'
+import { Button } from '@/components/Button'
+import { Progress } from '@/components/Progress'
+import { IncidentBadge } from '@/components/IncidentBadge'
+import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
+import { useOrders } from '@/hooks/useOrders'
+import { useIncidents } from '@/hooks/useIncidents'
 
 export function DashboardPage() {
-  const { data: orders = [], isLoading: ordersLoading } = useOrders()
-  const { data: incidents = [], isLoading: incidentsLoading } = useIncidents()
+  const ordersQuery = useOrders()
+  const incidentsQuery = useIncidents()
+  const { data: orders = [], isLoading: ordersLoading, isError: ordersError, error: ordersErr, refetch: refetchOrders } = ordersQuery
+  const { data: incidents = [], isLoading: incidentsLoading, isError: incidentsError, error: incidentsErr, refetch: refetchIncidents } = incidentsQuery
 
   const allLots = orders.flatMap((wo) => wo.lots)
   const stats = {
@@ -32,6 +35,30 @@ export function DashboardPage() {
   if (ordersLoading || incidentsLoading) {
     return (
       <div className="p-8 text-sm text-muted-foreground">Chargement du tableau de bord...</div>
+    )
+  }
+
+  if (ordersError) {
+    return (
+      <div className="p-8">
+        <QueryErrorAlert
+          error={ordersErr}
+          onRetry={() => refetchOrders()}
+          title="Erreur lors du chargement des ordres"
+        />
+      </div>
+    )
+  }
+
+  if (incidentsError) {
+    return (
+      <div className="p-8">
+        <QueryErrorAlert
+          error={incidentsErr}
+          onRetry={() => refetchIncidents()}
+          title="Erreur lors du chargement des incidents"
+        />
+      </div>
     )
   }
 

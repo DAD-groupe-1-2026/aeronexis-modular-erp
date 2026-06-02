@@ -19,7 +19,7 @@ flowchart TD
         AUTH[auth\nSécurisation + droits accès]
         APICLIENT[api-client\nNormalisation messages + HTTP]
         SHARED[shared-types\nContrats inter-couches]
-        UI[ui-components\nComposants modulaires partagés]
+        UI[ui\nComposants React partagés]
     end
 
     subgraph C3 [Couche 3 — Plateforme / Gateway]
@@ -74,7 +74,7 @@ aeronexis-modular-erp/
 │   ├── auth/                    # Sécurisation flux locaux + gestion des droits
 │   ├── api-client/              # Normalisation messages + couche HTTP
 │   ├── shared-types/            # Contrats inter-couches (types, DTOs, interfaces)
-│   └── ui-components/           # Composants UI modulaires interchangeables
+│   └── ui/                      # Composants React réutilisables (QueryErrorAlert, etc.)
 ├── services/                    # Couches 3 & 4 : Plateforme + Microservices
 │   ├── api-gateway/             # Couche 3 : NGINX (nginx.conf + Dockerfile)
 │   ├── auth-service/            # Couche 4 : Express + Sequelize — JWT, RBAC
@@ -105,35 +105,46 @@ Chaque application correspond à un rôle métier de l'entreprise.
 | `sales-app` | Commandes clients, livraisons, KPIs | Commerciaux |
 | `admin-dashboard` | Supervision globale, gestion utilisateurs, reporting | Direction |
 
-### Structure interne d'une application (pattern à reproduire)
+### Structure interne d'une application (pattern simplifié)
 
 ```
 apps/<nom>-app/src/
+├── components/            # Tous les composants React (UI + metier) — un seul niveau
+│   ├── Button.tsx
+│   ├── Card.tsx
+│   ├── Badge.tsx
+│   ├── Sidebar.tsx
+│   └── LotProgressCard.tsx
+├── hooks/                 # Tous les custom hooks — un seul niveau
+│   ├── useOrders.ts      # Queries (lecture)
+│   ├── useIncidents.ts
+│   └── useUpdateLotStatus.ts  # Mutations (modification)
+├── pages/                 # Écrans — consomment uniquement des hooks
 ├── routes/
 │   └── index.tsx          # createBrowserRouter + lazy loading + ProtectedRoute
-├── api/                   # Couche d'abstraction vers le gateway (bascule DEV/PROD)
+├── api/                   # Couche d'abstraction vers le gateway
 │   └── orders.ts
-├── hooks/
-│   ├── queries/           # useQuery React Query — lecture de données
-│   └── mutations/         # useMutation React Query — modification de données
-├── pages/                 # Écrans — consomment uniquement des hooks
-├── components/
-│   ├── layout/            # AppLayout, Sidebar propres au rôle
-│   ├── ui/                # Composants graphiques locaux (surcharge de ui-components)
-│   └── domain/            # Composants métiers présentationnels
-├── data/
-│   └── mock.ts            # Données de démo — utilisées si import.meta.env.DEV
+├── lib/
+│   └── utils.ts          # Utilitaires (cn, etc.)
+├── AppLayout.tsx          # Structure globale de l'app (sidebar + outlet)
 ├── App.tsx                # Providers : QueryClientProvider + RouterProvider
-└── main.tsx
+├── main.tsx
+└── index.css
 ```
+
+**Principes de la structure simplifiée :**
+- Pas de sous-dossiers dans `components/` ou `hooks/` — tous les fichiers au même niveau
+- Nomenclature claire : les noms de fichiers sont explicites (ex: `useUpdateLotStatus` vs `useLotDetail`)
+- Imports courts : `import { Button } from '@/components/Button'`
+- `AppLayout.tsx` à la racine de `src/` (composant de structure globale, distinct de `App.tsx`)
+- Séparation claire : `api/` (HTTP) → `hooks/` (React Query) → `pages/` (UI)
 
 **Règle de dépendance** : `pages/` → `hooks/` → `api/` → `@aeronexis-dynamics/api-client`.
 Une page ne doit jamais appeler directement `fetch` ou `apiClient`.
 
-**Bascule DEV/PROD dans `api/`** :
+**Structure de `api/`** :
 ```typescript
 export async function getOrders(): Promise<WorkOrder[]> {
-  if (import.meta.env.DEV) return mockWorkOrders   // données locales, pas de réseau
   const res = await apiClient.get<WorkOrder[]>('/api/production/orders')
   if (res.status === 'failure') throw new Error(res.error?.message)
   return res.data
@@ -148,14 +159,14 @@ Modules partagés entre toutes les applications.
 
 | Package | Rôle dans la couche 2 |
 |---|---|
-| `auth` | Sécurisation des flux locaux : `LoginPage`, `ProtectedRoute`, `useAuthStore` (JWT), `isAuthBypassed` (bypass dev) |
+| `auth` | Sécurisation des flux locaux : `LoginPage`, `ProtectedRoute`, `useAuthStore` (JWT), `RoleRedirector`, `isAuthBypassed` (bypass dev) |
 | `api-client` | Normalisation des messages `{ status, data, error }` + injection JWT + gestion des erreurs réseau |
-| `shared-types` | Contrats TypeScript inter-couches : entités métier, `ApiResponse<T>`, `NormalizedMessage<T>`, `ResolvedRequest` (payload JWT transmis par NGINX) |
-| `ui-components` | Composants UI modulaires : contrats de props `ButtonProps`, `CardProps`, `BadgeProps` — chaque app fournit son implémentation Tailwind locale |
+| `shared-types` | Contrats TypeScript inter-couches : entités métier (`WorkOrder`, `Lot`, `User`...), `ApiResponse<T>`, `ApiError`, `ApiStatus` |
+| `ui` | Composants React partagés entre les apps : `QueryErrorAlert` (affichage erreurs API/React Query), `getErrorMessage`, utilitaire `cn` |
 
 ### Normalisation des messages
 
-Toute communication inter-couches utilise le format `NormalizedMessage<T>` :
+Toute communication inter-couches utilise le format `ApiResponse<T>` :
 
 ```typescript
 // packages/shared-types
@@ -164,10 +175,9 @@ export interface ApiResponse<T> {
   data: T
   error?: { code: string; message: string }
 }
-
-// packages/api-client — alias explicite de la couche 2
-export type NormalizedMessage<T> = ApiResponse<T>
 ```
+
+Le `api-client` (couche 2) retourne systématiquement ce format, que l'appel réseau réussisse ou échoue.
 
 ---
 
@@ -359,13 +369,12 @@ import type { MonType } from '@aeronexis-dynamics/shared-types'
 3. **Fonction API** (couche 2→1) — ajouter dans `apps/<app>/src/api/<domaine>.ts` :
 ```typescript
 export async function getMaDonnee(): Promise<MaType[]> {
-  if (import.meta.env.DEV) return mockMaDonnee
   const res = await apiClient.get<MaType[]>('/api/<service>/ma-route')
   if (res.status === 'failure') throw new Error(res.error?.message)
   return res.data
 }
 ```
-4. **Hook** — créer dans `apps/<app>/src/hooks/queries/useMaDonnee.ts`
+4. **Hook** — créer dans `apps/<app>/src/hooks/useMaDonnee.ts`
 5. **Page** — consommer le hook (jamais appeler `apiClient` directement)
 
 ---
@@ -383,9 +392,25 @@ const MaPage = lazy(() => import('@/pages/MaPage').then((m) => ({ default: m.MaP
 
 ### D. Ajouter un composant
 
-- **Graphique pur** → `src/components/ui/` (surcharge de `@aeronexis-dynamics/ui-components`)
-- **Métier présentationnel** → `src/components/domain/` (reçoit des props, n'appelle pas de hooks)
-- **Interchangeable entre apps** → `packages/ui-components/src/` (contrat de props)
+Tous les composants vivent dans `apps/<app>/src/components/` au même niveau :
+
+- **Composant UI générique** → `src/components/Button.tsx`, `src/components/Card.tsx`
+- **Composant métier** → `src/components/LotProgressCard.tsx`, `src/components/IncidentBadge.tsx`
+- **Composant de layout** → `src/components/Sidebar.tsx`
+
+Nomenclature claire pour éviter les conflits : capitaliser les noms (ex: `Button.tsx`, pas `button.tsx`).
+
+**Note :** `AppLayout.tsx` est à la racine de `src/` car c'est un composant de structure globale.
+
+**Erreurs de requêtes :** utiliser `QueryErrorAlert` depuis `@aeronexis-dynamics/ui` lorsque `isError` est vrai sur un hook React Query :
+
+```tsx
+import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
+
+if (isError) {
+  return <QueryErrorAlert error={error} onRetry={() => refetch()} title="..." />
+}
+```
 
 ---
 
@@ -405,17 +430,24 @@ const MaPage = lazy(() => import('@/pages/MaPage').then((m) => ({ default: m.MaP
 
 1. Ajouter le rôle dans `packages/shared-types/src/index.ts` → type `Role`
 2. Créer `apps/<nom>-app/` en copiant la structure de `production-app`
-3. Déclarer les dépendances `@aeronexis-dynamics/auth`, `api-client`, `shared-types`
+3. Déclarer les dépendances `@aeronexis-dynamics/auth`, `api-client`, `shared-types`, `ui`
 4. Créer `.env.development` avec `VITE_AUTH_BYPASS=true`
 5. Ajouter le rôle dans la logique RBAC de `services/auth-service/src/models/User.js`
 
 ---
 
-### G. Étendre les mocks de développement
+### G. Configuration de développement
 
-**Fichier :** `apps/<app>/src/data/mock.ts`
+Les applications frontales peuvent être configurées pour fonctionner en mode isolé sans Docker :
 
-Les types importés depuis `@aeronexis-dynamics/shared-types` assurent la cohérence. Les fonctions `api/` basculant sur `import.meta.env.DEV` récupèrent automatiquement les nouvelles données.
+**Fichier :** `apps/<app>/.env.development`
+
+```env
+VITE_AUTH_BYPASS=true   # Bypass JWT, injecte un utilisateur mock
+VITE_API_URL=http://localhost  # URL de l'API Gateway
+```
+
+Quand `VITE_AUTH_BYPASS=true`, les routes protégées sont accessibles sans authentification réelle.
 
 ---
 

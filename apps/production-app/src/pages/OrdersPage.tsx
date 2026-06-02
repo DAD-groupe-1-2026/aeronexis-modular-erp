@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Search, Flame, ChevronRight } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Input, Select } from '@/components/ui/form'
-import { Progress } from '@/components/ui/progress'
-import { useOrders } from '@/hooks/queries/useOrders'
+import { Card, CardContent } from '@/components/Card'
+import { Badge } from '@/components/Badge'
+import { Input, Select } from '@/components/Form'
+import { Progress } from '@/components/Progress'
+import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
+import { useOrders } from '@/hooks/useOrders'
 import type { LotStatus } from '@aeronexis-dynamics/shared-types'
 
 const statusLabel: Record<LotStatus, string> = {
@@ -21,7 +22,7 @@ const statusVariant: Record<LotStatus, 'secondary' | 'warning' | 'success'> = {
 }
 
 export function OrdersPage() {
-  const { data: orders = [], isLoading } = useOrders()
+  const { data: orders = [], isLoading, isError, error, refetch } = useOrders()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<LotStatus | 'all'>('all')
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'urgent' | 'normal'>('all')
@@ -37,6 +38,18 @@ export function OrdersPage() {
 
   if (isLoading) {
     return <div className="p-8 text-sm text-muted-foreground">Chargement des ordres...</div>
+  }
+
+  if (isError) {
+    return (
+      <div className="p-8">
+        <QueryErrorAlert
+          error={error}
+          onRetry={() => refetch()}
+          title="Erreur lors du chargement des ordres"
+        />
+      </div>
+    )
   }
 
   return (
