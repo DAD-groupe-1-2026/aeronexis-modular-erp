@@ -18,6 +18,17 @@ async function list(_req, res) {
   }
 }
 
+// GET /api/production/incidents/:id
+async function getOne(req, res) {
+  try {
+    const incident = await Incident.findByPk(req.params.id)
+    if (!incident) return fail(res, 'NOT_FOUND', 'Incident introuvable', 404)
+    ok(res, incident)
+  } catch (err) {
+    fail(res, 'SERVER_ERROR', err.message)
+  }
+}
+
 // POST /api/production/incidents
 async function create(req, res) {
   try {
@@ -43,4 +54,4 @@ async function resolve(req, res) {
   }
 }
 
-module.exports = { list, create, resolve }
+module.exports = { list, getOne, create, resolve }

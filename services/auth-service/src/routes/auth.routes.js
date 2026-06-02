@@ -1,5 +1,6 @@
 const { Router } = require('express')
-const { login, register, verify } = require('../controllers/auth.controller')
+const { login, register, verify, getUserById } = require('../controllers/auth.controller')
+const { authenticate } = require('../middlewares/authenticate')
 
 const router = Router()
 
@@ -9,5 +10,6 @@ router.post('/register', register)
 
 // Route interne utilisée par NGINX auth_request
 router.get('/verify', verify)
+router.get('/users/:id', authenticate, getUserById)
 
 module.exports = router

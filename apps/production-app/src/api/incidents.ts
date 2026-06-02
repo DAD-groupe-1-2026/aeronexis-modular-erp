@@ -7,6 +7,12 @@ export async function getIncidents(): Promise<Incident[]> {
   return res.data
 }
 
+export async function getIncidentById(id: string): Promise<Incident> {
+  const res = await apiClient.get<Incident>(`/api/production/incidents/${id}`)
+  if (res.status === 'failure') throw new Error(res.error?.message)
+  return res.data
+}
+
 export async function createIncident(payload: {
   lotId: string
   severity: IncidentSeverity

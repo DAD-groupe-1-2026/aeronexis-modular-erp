@@ -18,6 +18,7 @@ router.patch('/lots/:id', updateLot)
 
 // Incidents
 router.get('/incidents', incidentsCtrl.list)
+router.get('/incidents/:id', incidentsCtrl.getOne)
 router.post('/incidents', incidentsCtrl.create)
 router.patch('/incidents/:id/resolve', incidentsCtrl.resolve)
 

@@ -193,21 +193,23 @@ export function DashboardPage() {
               <p className="text-sm text-muted-foreground text-center py-4">Aucun incident ouvert</p>
             )}
             {activeIncidents.map((inc) => (
-              <div key={inc.id} className="rounded-lg border border-border p-4 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">{inc.lotReference}</span>
-                  <IncidentBadge severity={inc.severity} />
+              <Link key={inc.id} to={`/incidents/${inc.id}`} className="block">
+                <div className="rounded-lg border border-border p-4 space-y-1.5 hover:bg-accent/50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-sm">{inc.lotReference}</span>
+                    <IncidentBadge severity={inc.severity} />
+                  </div>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{inc.description}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(inc.reportedAt).toLocaleDateString('fr-FR', {
+                      day: 'numeric',
+                      month: 'long',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground line-clamp-2">{inc.description}</p>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(inc.reportedAt).toLocaleDateString('fr-FR', {
-                    day: 'numeric',
-                    month: 'long',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
-              </div>
+              </Link>
             ))}
           </CardContent>
         </Card>

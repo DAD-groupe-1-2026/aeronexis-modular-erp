@@ -115,6 +115,40 @@ async function register(req, res) {
 }
 
 /**
+ * GET /auth/users/:id
+ * Route protégée utilisée pour enrichir l'affichage (userId -> profil).
+ */
+async function getUserById(req, res) {
+  try {
+    const user = await User.findByPk(req.params.id)
+    if (!user) {
+      return res.status(404).json({
+        status: 'failure',
+        data: null,
+        error: { code: 'NOT_FOUND', message: 'Utilisateur introuvable' },
+      })
+    }
+
+    return res.json({
+      status: 'success',
+      data: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+      },
+    })
+  } catch (err) {
+    return res.status(500).json({
+      status: 'failure',
+      data: null,
+      error: { code: 'SERVER_ERROR', message: err.message },
+    })
+  }
+}
+
+/**
  * GET /auth/verify
  * Utilisé par NGINX auth_request pour valider le JWT avant de router.
  * Retourne 200 + header X-User si valide, 401 sinon.
@@ -134,4 +168,4 @@ function verify(req, res) {
   }
 }
 
-module.exports = { login, register, verify }
+module.exports = { login, register, verify, getUserById }
