@@ -7,5 +7,9 @@
     "apps/*",
     "packages/*",
     "services/*"
-  ]
+  ],
+  "overrides": {
+    "vite": "5.4.21",
+    "@vitejs/plugin-react": "4.7.0"
+  }
 }

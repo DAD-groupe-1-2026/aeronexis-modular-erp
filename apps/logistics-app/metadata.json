@@ -1,0 +1,8 @@
+{
+  "name": "AERONEXIS Logistics",
+  "description": "Logistics and WMS module for AERONEXIS Dynamics ERP.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
