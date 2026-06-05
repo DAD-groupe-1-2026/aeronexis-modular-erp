@@ -113,17 +113,24 @@ apps/<nom>-app/src/
 │   ├── Button.tsx
 │   ├── Card.tsx
 │   ├── Badge.tsx
+│   ├── Form.tsx
+│   ├── Progress.tsx
 │   ├── Sidebar.tsx
-│   └── LotProgressCard.tsx
-├── hooks/                 # Tous les custom hooks — un seul niveau
-│   ├── useOrders.ts      # Queries (lecture)
-│   ├── useIncidents.ts
-│   └── useUpdateLotStatus.ts  # Mutations (modification)
-├── pages/                 # Écrans — consomment uniquement des hooks
+│   ├── LotProgressCard.tsx
+│   └── IncidentBadge.tsx
+├── pages/                 # Écrans — UI + React Query inline (useQuery / useMutation)
+│   ├── DashboardPage.tsx
+│   ├── OrdersPage.tsx
+│   ├── OrderDetailPage.tsx
+│   ├── IncidentPage.tsx
+│   ├── IncidentDetailPage.tsx
+│   └── HistoryPage.tsx
 ├── routes/
 │   └── index.tsx          # createBrowserRouter + lazy loading + ProtectedRoute
 ├── api/                   # Couche d'abstraction vers le gateway
-│   └── orders.ts
+│   ├── orders.ts
+│   ├── incidents.ts
+│   └── users.ts
 ├── lib/
 │   └── utils.ts          # Utilitaires (cn, etc.)
 ├── AppLayout.tsx          # Structure globale de l'app (sidebar + outlet)
@@ -133,14 +140,58 @@ apps/<nom>-app/src/
 ```
 
 **Principes de la structure simplifiée :**
-- Pas de sous-dossiers dans `components/` ou `hooks/` — tous les fichiers au même niveau
-- Nomenclature claire : les noms de fichiers sont explicites (ex: `useUpdateLotStatus` vs `useLotDetail`)
+- Pas de sous-dossiers dans `components/` — tous les fichiers au même niveau
+- Pas de dossier `hooks/` — `useQuery` / `useMutation` sont appelés directement dans le composant page
+- Nomenclature claire : les noms de fichiers sont explicites (ex: `OrderDetailPage.tsx`)
 - Imports courts : `import { Button } from '@/components/Button'`
 - `AppLayout.tsx` à la racine de `src/` (composant de structure globale, distinct de `App.tsx`)
-- Séparation claire : `api/` (HTTP) → `hooks/` (React Query) → `pages/` (UI)
+- Séparation claire : `pages/` (UI + React Query) → `api/` (HTTP)
 
-**Règle de dépendance** : `pages/` → `hooks/` → `api/` → `@aeronexis-dynamics/api-client`.
-Une page ne doit jamais appeler directement `fetch` ou `apiClient`.
+**Règle de dépendance** : `pages/` → `api/` → `@aeronexis-dynamics/api-client`.
+Une page ne doit jamais appeler directement `fetch` ou `apiClient`. Les queries partagées (même `queryKey`) peuvent être dupliquées inline dans plusieurs pages — React Query partage le cache.
+
+**Pattern page** (lecture + erreur) :
+```tsx
+import { useQuery } from '@tanstack/react-query'
+import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
+import { getOrders } from '@/api/orders'
+
+export function OrdersPage() {
+  const { data: orders = [], isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['orders'],
+    queryFn: getOrders,
+  })
+
+  if (isLoading) return <div>Chargement...</div>
+  if (isError) return <QueryErrorAlert error={error} onRetry={() => refetch()} title="..." />
+  // ...
+}
+```
+
+**Pattern page** (mutation + invalidation) :
+```tsx
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { getOrderById, updateLotStatus } from '@/api/orders'
+
+export function OrderDetailPage() {
+  const { orderId = '' } = useParams()
+  const queryClient = useQueryClient()
+  const { data: workOrder } = useQuery({
+    queryKey: ['orders', orderId],
+    queryFn: () => getOrderById(orderId),
+    enabled: Boolean(orderId),
+  })
+  const updateLot = useMutation({
+    mutationFn: ({ lotId, status, completionPercent }) =>
+      updateLotStatus(lotId, status, completionPercent),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders', orderId] })
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+    },
+  })
+  // updateLot.mutate(...)
+}
+```
 
 **Structure de `api/`** :
 ```typescript
@@ -374,15 +425,31 @@ export async function getMaDonnee(): Promise<MaType[]> {
   return res.data
 }
 ```
-4. **Hook** — créer dans `apps/<app>/src/hooks/useMaDonnee.ts`
-5. **Page** — consommer le hook (jamais appeler `apiClient` directement)
+4. **Page** — créer ou mettre à jour `apps/<app>/src/pages/MaPage.tsx` avec `useQuery` / `useMutation` dans le composant (pas de dossier `hooks/`) :
+```tsx
+import { useQuery } from '@tanstack/react-query'
+import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
+import { getMaDonnee } from '@/api/ma-donnee'
+
+export function MaPage() {
+  const { data = [], isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['ma-donnee'],
+    queryFn: getMaDonnee,
+  })
+  if (isLoading) return <div>Chargement...</div>
+  if (isError) return <QueryErrorAlert error={error} onRetry={() => refetch()} title="..." />
+  // ...
+}
+```
+Ne jamais appeler `apiClient` directement depuis la page.
 
 ---
 
 ### C. Ajouter une page dans une application
 
-1. Créer `apps/<app>/src/pages/MaPage.tsx`
-2. Ajouter avec lazy loading dans `apps/<app>/src/routes/index.tsx` :
+1. Créer `apps/<app>/src/pages/MaPage.tsx` avec les appels `useQuery` / `useMutation` inline (voir pattern ci-dessus)
+2. Si besoin, ajouter les fonctions HTTP dans `apps/<app>/src/api/`
+3. Ajouter avec lazy loading dans `apps/<app>/src/routes/index.tsx` :
 ```tsx
 const MaPage = lazy(() => import('@/pages/MaPage').then((m) => ({ default: m.MaPage })))
 { path: '/ma-route', element: <Suspense fallback={<Loading />}><MaPage /></Suspense> }
@@ -402,7 +469,7 @@ Nomenclature claire pour éviter les conflits : capitaliser les noms (ex: `Butto
 
 **Note :** `AppLayout.tsx` est à la racine de `src/` car c'est un composant de structure globale.
 
-**Erreurs de requêtes :** utiliser `QueryErrorAlert` depuis `@aeronexis-dynamics/ui` lorsque `isError` est vrai sur un hook React Query :
+**Erreurs de requêtes :** utiliser `QueryErrorAlert` depuis `@aeronexis-dynamics/ui` lorsque `isError` est vrai sur une requête React Query :
 
 ```tsx
 import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
@@ -429,7 +496,7 @@ if (isError) {
 ### F. Ajouter une nouvelle application (couche 1)
 
 1. Ajouter le rôle dans `packages/shared-types/src/index.ts` → type `Role`
-2. Créer `apps/<nom>-app/` en copiant la structure de `production-app`
+2. Créer `apps/<nom>-app/` en copiant la structure de `production-app` (sans dossier `hooks/`, React Query inline dans les pages)
 3. Déclarer les dépendances `@aeronexis-dynamics/auth`, `api-client`, `shared-types`, `ui`
 4. Créer `.env.development` avec `VITE_AUTH_BYPASS=true`
 5. Ajouter le rôle dans la logique RBAC de `services/auth-service/src/models/User.js`

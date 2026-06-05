@@ -12,15 +12,14 @@ import { Badge } from '@/components/Badge'
 import { Button } from '@/components/Button'
 import { Progress } from '@/components/Progress'
 import { IncidentBadge } from '@/components/IncidentBadge'
+import { useQuery } from '@tanstack/react-query'
 import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
-import { useOrders } from '@/hooks/useOrders'
-import { useIncidents } from '@/hooks/useIncidents'
+import { getOrders } from '@/api/orders'
+import { getIncidents } from '@/api/incidents'
 
 export function DashboardPage() {
-  const ordersQuery = useOrders()
-  const incidentsQuery = useIncidents()
-  const { data: orders = [], isLoading: ordersLoading, isError: ordersError, error: ordersErr, refetch: refetchOrders } = ordersQuery
-  const { data: incidents = [], isLoading: incidentsLoading, isError: incidentsError, error: incidentsErr, refetch: refetchIncidents } = incidentsQuery
+  const { data: orders = [], isLoading: ordersLoading, isError: ordersError, error: ordersErr, refetch: refetchOrders } = useQuery({ queryKey: ['orders'], queryFn: getOrders })
+  const { data: incidents = [], isLoading: incidentsLoading, isError: incidentsError, error: incidentsErr, refetch: refetchIncidents } = useQuery({ queryKey: ['incidents'], queryFn: getIncidents })
 
   const allLots = orders.flatMap((wo) => wo.lots)
   const stats = {

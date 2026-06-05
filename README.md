@@ -53,16 +53,18 @@ production-app/src/
 │   ├── Sidebar.tsx
 │   ├── LotProgressCard.tsx
 │   └── IncidentBadge.tsx
-├── hooks/               # Tous les custom hooks - un seul niveau
-│   ├── useOrders.ts
-│   ├── useIncidents.ts
-│   ├── useHistory.ts
-│   ├── useLotDetail.ts
-│   ├── useReportIncident.ts
-│   └── useUpdateLotStatus.ts
-├── pages/               # Vues routees (DashboardPage, OrdersPage, etc.)
+├── pages/               # Vues routees (UI + React Query inline)
+│   ├── DashboardPage.tsx
+│   ├── OrdersPage.tsx
+│   ├── OrderDetailPage.tsx
+│   ├── IncidentPage.tsx
+│   ├── IncidentDetailPage.tsx
+│   └── HistoryPage.tsx
 ├── routes/              # Configuration React Router
 ├── api/                 # Fonctions HTTP pures (appellent api-client)
+│   ├── orders.ts
+│   ├── incidents.ts
+│   └── users.ts
 ├── lib/                 # Utilitaires (utils.ts)
 ├── AppLayout.tsx        # Structure globale de l'app (sidebar + outlet)
 ├── App.tsx              # Point d'entree (providers)
@@ -71,12 +73,28 @@ production-app/src/
 ```
 
 **Principes :**
-- Pas de sous-dossiers dans `components/` ou `hooks/` - tous les fichiers au même niveau
-- Nomenclature claire : les noms de fichiers sont explicites (ex: `useUpdateLotStatus` vs `useLotDetail`)
+- Pas de sous-dossiers dans `components/` - tous les fichiers au même niveau
+- Pas de dossier `hooks/` - `useQuery` / `useMutation` sont appelés directement dans le composant page
+- Nomenclature claire : les noms de fichiers sont explicites (ex: `OrderDetailPage.tsx`)
 - Imports courts : `import { Button } from '@/components/Button'`
 - `AppLayout.tsx` à la racine de `src/` (composant de structure globale)
-- Séparation claire : `api/` (HTTP) → `hooks/` (React Query) → `pages/` (UI)
+- Séparation claire : `pages/` (UI + React Query) → `api/` (HTTP) → `@aeronexis-dynamics/api-client`
+- Queries partagées : même `queryKey` dupliquée dans plusieurs pages si besoin (cache React Query partagé)
 - Composants réutilisables entre apps : `@aeronexis-dynamics/ui` (`QueryErrorAlert`, `getErrorMessage`)
+
+**Exemple minimal** (`OrdersPage.tsx`) :
+```tsx
+import { useQuery } from '@tanstack/react-query'
+import { getOrders } from '@/api/orders'
+
+export function OrdersPage() {
+  const { data: orders = [], isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['orders'],
+    queryFn: getOrders,
+  })
+  // ...
+}
+```
 
 ---
 

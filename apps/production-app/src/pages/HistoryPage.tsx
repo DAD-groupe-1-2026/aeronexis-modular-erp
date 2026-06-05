@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom'
 import { ClipboardList, AlertTriangle, CheckCircle2, ArrowUpRight, Search } from 'lucide-react'
 import { Card, CardContent } from '@/components/Card'
 import { Input } from '@/components/Form'
+import { useQuery } from '@tanstack/react-query'
 import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
-import { useHistory } from '@/hooks/useHistory'
+import { getHistory } from '@/api/incidents'
 import type { HistoryEntry } from '@aeronexis-dynamics/shared-types'
 
 const actionIcon: Record<string, React.ReactNode> = {
@@ -30,7 +31,7 @@ function groupByDate(entries: HistoryEntry[]) {
 }
 
 export function HistoryPage() {
-  const { data: history = [], isLoading, isError, error, refetch } = useHistory()
+  const { data: history = [], isLoading, isError, error, refetch } = useQuery({ queryKey: ['history'], queryFn: getHistory })
   const [search, setSearch] = useState('')
 
   const filtered = history.filter(

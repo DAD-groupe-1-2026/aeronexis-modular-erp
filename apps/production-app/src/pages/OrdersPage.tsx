@@ -5,8 +5,9 @@ import { Card, CardContent } from '@/components/Card'
 import { Badge } from '@/components/Badge'
 import { Input, Select } from '@/components/Form'
 import { Progress } from '@/components/Progress'
+import { useQuery } from '@tanstack/react-query'
 import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
-import { useOrders } from '@/hooks/useOrders'
+import { getOrders } from '@/api/orders'
 import type { LotStatus } from '@aeronexis-dynamics/shared-types'
 
 const statusLabel: Record<LotStatus, string> = {
@@ -22,7 +23,7 @@ const statusVariant: Record<LotStatus, 'secondary' | 'warning' | 'success'> = {
 }
 
 export function OrdersPage() {
-  const { data: orders = [], isLoading, isError, error, refetch } = useOrders()
+  const { data: orders = [], isLoading, isError, error, refetch } = useQuery({ queryKey: ['orders'], queryFn: getOrders })
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<LotStatus | 'all'>('all')
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'urgent' | 'normal'>('all')

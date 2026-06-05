@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/Button'
 import { Textarea, Select, Label } from '@/components/Form'
 import { Badge } from '@/components/Badge'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
-import { useOrders } from '@/hooks/useOrders'
-import { useReportIncident } from '@/hooks/useReportIncident'
+import { getOrders } from '@/api/orders'
+import { createIncident } from '@/api/incidents'
 import type { IncidentSeverity } from '@aeronexis-dynamics/shared-types'
 
 const severityConfig: Record<
@@ -23,8 +24,15 @@ const severityConfig: Record<
 export function IncidentPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { data: orders = [], isError: ordersError, error: ordersErr, refetch: refetchOrders } = useOrders()
-  const reportIncident = useReportIncident()
+  const queryClient = useQueryClient()
+  const { data: orders = [], isError: ordersError, error: ordersErr, refetch: refetchOrders } = useQuery({ queryKey: ['orders'], queryFn: getOrders })
+  const reportIncident = useMutation({
+    mutationFn: (payload: { lotId: string; severity: IncidentSeverity; description: string }) => createIncident(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incidents'] })
+      queryClient.invalidateQueries({ queryKey: ['history'] })
+    },
+  })
 
   const allLots = orders.flatMap((wo) => wo.lots)
   const [lotId, setLotId] = useState(searchParams.get('lot') ?? '')

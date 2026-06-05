@@ -3,10 +3,10 @@ import { AlertTriangle, ArrowLeft, Calendar, CheckCircle2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card'
 import { Badge } from '@/components/Badge'
 import { Button } from '@/components/Button'
-import { useIncidentDetail } from '@/hooks/useIncidentDetail'
-import { useResolveIncident } from '@/hooks/useResolveIncident'
-import { useUserProfile } from '@/hooks/useUserProfile'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
+import { getIncidentById, resolveIncident as resolveIncidentById } from '@/api/incidents'
+import { getUserById } from '@/api/users'
 import type { IncidentSeverity } from '@aeronexis-dynamics/shared-types'
 
 const severityVariant: Record<IncidentSeverity, 'secondary' | 'warning' | 'destructive'> = {
@@ -26,9 +26,27 @@ const severityLabel: Record<IncidentSeverity, string> = {
 export function IncidentDetailPage() {
   const { incidentId = '' } = useParams<{ incidentId: string }>()
   const navigate = useNavigate()
-  const { data: incident, isLoading, isError, error, refetch } = useIncidentDetail(incidentId)
-  const resolveIncident = useResolveIncident()
-  const { data: reporter } = useUserProfile(incident?.reportedBy ?? '')
+  const queryClient = useQueryClient()
+  const { data: incident, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['incidents', incidentId],
+    queryFn: () => getIncidentById(incidentId),
+    enabled: Boolean(incidentId),
+  })
+  const resolveIncident = useMutation({
+    mutationFn: (id: string) => resolveIncidentById(id),
+    onSuccess: (_resolvedIncident, id) => {
+      queryClient.invalidateQueries({ queryKey: ['incidents'] })
+      queryClient.invalidateQueries({ queryKey: ['incidents', id] })
+      queryClient.invalidateQueries({ queryKey: ['history'] })
+    },
+  })
+  const reportedBy = incident?.reportedBy ?? ''
+  const { data: reporter } = useQuery({
+    queryKey: ['users', reportedBy],
+    queryFn: () => getUserById(reportedBy),
+    enabled: Boolean(reportedBy),
+    retry: false,
+  })
 
   if (isLoading) {
     return <div className="p-8 text-sm text-muted-foreground">Chargement de l'incident...</div>

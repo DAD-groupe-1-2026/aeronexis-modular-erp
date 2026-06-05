@@ -6,9 +6,9 @@ import { Badge } from '@/components/Badge'
 import { Button } from '@/components/Button'
 import { Progress } from '@/components/Progress'
 import { Select } from '@/components/Form'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
-import { useLotDetail } from '@/hooks/useLotDetail'
-import { useUpdateLotStatus } from '@/hooks/useUpdateLotStatus'
+import { getOrderById, updateLotStatus } from '@/api/orders'
 import type { LotStatus } from '@aeronexis-dynamics/shared-types'
 
 const statusLabel: Record<LotStatus, string> = {
@@ -26,8 +26,20 @@ const statusVariant: Record<LotStatus, 'secondary' | 'warning' | 'success'> = {
 export function OrderDetailPage() {
   const { orderId = '' } = useParams<{ orderId: string }>()
   const navigate = useNavigate()
-  const { data: workOrder, isLoading, isError, error, refetch } = useLotDetail(orderId)
-  const updateLot = useUpdateLotStatus(orderId)
+  const queryClient = useQueryClient()
+  const { data: workOrder, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['orders', orderId],
+    queryFn: () => getOrderById(orderId),
+    enabled: Boolean(orderId),
+  })
+  const updateLot = useMutation({
+    mutationFn: ({ lotId, status, completionPercent }: { lotId: string; status: LotStatus; completionPercent: number }) =>
+      updateLotStatus(lotId, status, completionPercent),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders', orderId] })
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+    },
+  })
 
   const [lotStatuses, setLotStatuses] = useState<Record<string, LotStatus>>({})
   const [lotProgress, setLotProgress] = useState<Record<string, number>>({})
