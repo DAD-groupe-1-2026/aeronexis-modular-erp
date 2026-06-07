@@ -1,5 +1,6 @@
 const sequelize = require('../db/sequelize')
 const { DataTypes } = require('sequelize')
+const {publishEvent, EVENTS} = require('@aeronexis/event-bus')
 
 const SCHEMA = process.env.DB_SCHEMA || 'production'
 
@@ -90,4 +91,140 @@ Material.belongsTo(Lot, { foreignKey: 'lotId', as: 'lot' })
 Lot.hasMany(Incident, { foreignKey: 'lotId', as: 'incidents' })
 Incident.belongsTo(Lot, { foreignKey: 'lotId', as: 'lot' })
 
+
+
+// ─── WorkOrder Events ──────────────────────────────────────────────────────────────
+
+
+WorkOrder.afterCreate(async (workOrder) => {
+
+  await publishEvent(
+    EVENTS.WORK_ORDER_CREATED,
+    'production-service',
+    {
+      id: workOrder.id,
+      reference: workOrder.reference,
+      clientName: workOrder.clientName,
+      status: workOrder.status
+    }
+  )
+
+})
+
+WorkOrder.afterUpdate(async (workOrder) => {
+
+  await publishEvent(
+    EVENTS.WORK_ORDER_UPDATED,
+    'production-service',
+    {
+      id: workOrder.id,
+      reference: workOrder.reference,
+      status: workOrder.status
+    }
+  )
+
+})
+
+// ─── Incident Events ──────────────────────────────────────────────────────────────
+
+
+Incident.afterCreate(async (incident) => {
+
+  await publishEvent(
+    EVENTS.INCIDENT_CREATED,
+    'production-service',
+    {
+      id: incident.id,
+      severity: incident.severity,
+      resolved: incident.resolved
+    }
+  )
+
+})
+
+Incident.afterUpdate(async (incident) => {
+
+  if (incident.resolved) {
+
+    await publishEvent(
+      EVENTS.INCIDENT_RESOLVED,
+      'production-service',
+      {
+        id: incident.id
+      }
+    )
+
+  }
+
+})
+
+// ─── Lot Events ──────────────────────────────────────────────────────────────
+
+
+Lot.afterCreate(async (lot) => {
+
+  await publishEvent(
+    EVENTS.LOT_CREATED,
+    'production-service',
+    {
+      id: lot.id,
+      reference: lot.reference,
+      product: lot.product
+    }
+  )
+
+})
+
+Lot.afterUpdate(async (lot) => {
+
+  await publishEvent(
+    EVENTS.LOT_UPDATED,
+    'production-service',
+    {
+      id: lot.id,
+      reference: lot.reference,
+      status: lot.status,
+      completionPercent:
+        lot.completionPercent
+    }
+  )
+
+})
+
+
+// ─── Material Events ──────────────────────────────────────────────────────────────
+
+
+Material.afterCreate(
+  async (material) => {
+
+    await publishEvent(
+      EVENTS.MATERIAL_CREATED,
+      'production-service',
+      {
+        id: material.id,
+        name: material.name,
+        quantity: material.quantity
+      }
+    )
+
+  }
+)
+
+Material.afterUpdate(
+  async (material) => {
+
+    await publishEvent(
+      EVENTS.MATERIAL_UPDATED,
+      'production-service',
+      {
+        id: material.id,
+        name: material.name,
+        quantity: material.quantity,
+        available: material.available
+      }
+    )
+
+  }
+)
 module.exports = { WorkOrder, Lot, Material, Incident, HistoryEntry }

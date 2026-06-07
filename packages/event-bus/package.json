@@ -1,0 +1,8 @@
+{
+  "name": "@aeronexis/event-bus",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "dependencies": {
+    "amqplib": "^0.10.4"
+  }
+}
