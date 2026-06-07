@@ -1,53 +1,48 @@
-const amqp = require('amqplib');
+const amqp = require("amqplib");
+const AuditLog = require("../models/AuditLog");
 
-const AuditLog = require('../models/AuditLog');
-
-const QUEUE_NAME = 'audit_events';
+const QUEUE_NAME = "audit_events";
 
 async function startConsumer() {
-  try {
-    const connection = await amqp.connect(
-      process.env.RABBITMQ_URL
-    );
+  while (true) {
+    try {
+      console.log("Connecting to RabbitMQ...");
 
-    const channel =
-      await connection.createChannel();
+      const connection = await amqp.connect(
+        process.env.RABBITMQ_URL
+      );
 
-    await channel.assertQueue(
-      QUEUE_NAME,
-      {
-        durable: true
-      }
-    );
+      const channel = await connection.createChannel();
 
-    console.log(
-      'Listening RabbitMQ queue'
-    );
+      await channel.assertQueue(QUEUE_NAME, {
+        durable: true,
+      });
 
-    channel.consume(
-      QUEUE_NAME,
-      async (msg) => {
+      console.log("Listening RabbitMQ queue");
 
+      channel.consume(QUEUE_NAME, async (msg) => {
         if (!msg) return;
 
-        const event =
-          JSON.parse(
-            msg.content.toString()
-          );
+        const event = JSON.parse(msg.content.toString());
+
+        console.log("Event received:", event);
 
         await AuditLog.create({
           eventType: event.eventType,
           service: event.service,
           userId: event.userId,
-          data: event.data
+          data: event.data,
         });
 
         channel.ack(msg);
-      }
-    );
-  } catch (error) {
-    console.error(error);
+      });
+
+      break; // STOP retry loop si OK
+
+    } catch (error) {
+      console.error("RabbitMQ not ready, retrying in 5s...");
+      await new Promise((res) => setTimeout(res, 5000));
+    }
   }
 }
-
 module.exports = startConsumer;

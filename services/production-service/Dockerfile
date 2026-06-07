@@ -2,12 +2,14 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY services/production-service/package.json ./
-RUN npm install --production
+COPY package*.json ./
+COPY packages ./packages
+COPY services/production-service ./services/production-service
 
-COPY services/production-service/src ./src
+RUN npm install --omit=dev
+
+WORKDIR /app/services/production-service
 
 EXPOSE 3002
 
-CMD ["node", "src/index.js"]
-    
+CMD ["npm", "start"]

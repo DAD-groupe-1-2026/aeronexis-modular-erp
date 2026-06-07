@@ -1,20 +1,31 @@
 const express = require('express');
 
 const connectMongo = require('./db/mongo');
-
-const startConsumer =
-  require('./rabbitmq/consumer');
+const startConsumer = require('./rabbitmq/consumer');
 
 const app = express();
 
 app.use(express.json());
 
-connectMongo();
+async function bootstrap() {
+  try {
+    await connectMongo();
 
-startConsumer();
+    await startConsumer();
 
-app.listen(3005, () => {
-  console.log(
-    'Traceability Service started'
-  );
-});
+    app.listen(3005, () => {
+      console.log(
+        'Traceability Service started'
+      );
+    });
+  } catch (error) {
+    console.error(
+      'Startup error:',
+      error
+    );
+
+    process.exit(1);
+  }
+}
+
+bootstrap();
