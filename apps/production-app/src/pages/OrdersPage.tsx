@@ -88,7 +88,7 @@ export function OrdersPage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="flex flex-wrap gap-4 p-4 rounded-2xl border border-white/10 bg-[#0a0a0c]/40 backdrop-blur-2xl shadow-xl"
+        className="flex flex-wrap gap-4 p-4 rounded-2xl border border-white/10 bg-[#0a0a0c]/80 backdrop-blur-2xl shadow-xl"
       >
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
@@ -135,7 +135,7 @@ export function OrdersPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 * Math.min(index, 5) }}
                 whileHover={{ scale: 1.01, backgroundColor: 'rgba(10, 10, 12, 0.6)' }}
-                className="rounded-2xl border border-white/10 bg-[#0a0a0c]/40 backdrop-blur-2xl shadow-xl transition-all cursor-pointer p-6"
+                className="rounded-2xl border border-white/10 bg-[#0a0a0c]/80 backdrop-blur-2xl shadow-xl transition-all cursor-pointer p-6"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 space-y-4">

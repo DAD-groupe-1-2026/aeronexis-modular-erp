@@ -50,7 +50,7 @@ function StatCard({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay, duration: 0.4 }}
       whileHover={{ y: -4, scale: 1.02 }}
-      className="rounded-2xl border border-white/10 bg-[#0a0a0c]/40 backdrop-blur-2xl px-5 py-5 flex items-center gap-4 shadow-xl"
+      className="rounded-2xl border border-white/10 bg-[#0a0a0c]/80 backdrop-blur-2xl px-5 py-5 flex items-center gap-4 shadow-xl"
     >
       <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${iconBg} border border-white/5`}>
         <Icon className={`h-6 w-6 ${iconClass}`} />
@@ -189,7 +189,7 @@ export function DashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5 }}
-          className="rounded-2xl border border-white/10 bg-[#0a0a0c]/40 backdrop-blur-2xl shadow-2xl overflow-hidden flex flex-col"
+          className="rounded-2xl border border-white/10 bg-[#0a0a0c]/80 backdrop-blur-2xl shadow-2xl overflow-hidden flex flex-col"
         >
           <div className="flex items-center justify-between px-6 py-4 bg-white/5 border-b border-white/10">
             <div className="flex items-center gap-2.5 text-sm font-semibold text-white">
@@ -249,7 +249,7 @@ export function DashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.5 }}
-          className="rounded-2xl border border-white/10 bg-[#0a0a0c]/40 backdrop-blur-2xl shadow-2xl overflow-hidden flex flex-col"
+          className="rounded-2xl border border-white/10 bg-[#0a0a0c]/80 backdrop-blur-2xl shadow-2xl overflow-hidden flex flex-col"
         >
           <div className="flex items-center gap-2.5 px-6 py-4 bg-white/5 border-b border-white/10">
             <div className="p-1.5 bg-amber-500/20 rounded-md">

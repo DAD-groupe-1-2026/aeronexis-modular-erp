@@ -122,7 +122,7 @@ export function IncidentDetailPage() {
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-2xl border border-white/10 bg-[#0a0a0c]/40 backdrop-blur-2xl shadow-xl overflow-hidden"
+        className="rounded-2xl border border-white/10 bg-[#0a0a0c]/80 backdrop-blur-2xl shadow-xl overflow-hidden"
       >
         <div className="px-6 py-4 bg-white/5 border-b border-white/10">
           <p className="text-sm font-bold text-white">Détails de l'incident</p>

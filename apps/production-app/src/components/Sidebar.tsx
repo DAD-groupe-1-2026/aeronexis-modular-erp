@@ -22,7 +22,7 @@ export function Sidebar() {
   const { user } = useAuthStore()
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-50 flex w-56 flex-col bg-[#0a0a0c]/40 backdrop-blur-2xl border-r border-white/10">
+    <aside className="fixed inset-y-0 left-0 z-50 flex w-56 flex-col bg-[#0a0a0c]/80 backdrop-blur-2xl border-r border-white/10">
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 px-6 border-b border-white/10">
         <motion.div 

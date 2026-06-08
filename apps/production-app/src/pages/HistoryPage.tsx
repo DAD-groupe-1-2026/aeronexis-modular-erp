@@ -101,7 +101,7 @@ export function HistoryPage() {
         <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
         <Input
           placeholder="Rechercher dans l'historique..."
-          className="pl-10 bg-[#0a0a0c]/40 backdrop-blur-2xl border-white/10 text-white placeholder:text-slate-500 focus:border-indigo-500/50 focus:ring-indigo-500/50 rounded-xl shadow-xl"
+          className="pl-10 bg-[#0a0a0c]/80 backdrop-blur-2xl border-white/10 text-white placeholder:text-slate-500 focus:border-indigo-500/50 focus:ring-indigo-500/50 rounded-xl shadow-xl"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -122,7 +122,7 @@ export function HistoryPage() {
             <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3 ml-2 capitalize">
               {date}
             </h2>
-            <div className="rounded-2xl border border-white/10 bg-[#0a0a0c]/40 backdrop-blur-2xl shadow-xl overflow-hidden divide-y divide-white/5">
+            <div className="rounded-2xl border border-white/10 bg-[#0a0a0c]/80 backdrop-blur-2xl shadow-xl overflow-hidden divide-y divide-white/5">
               {entries.map((entry, entryIndex) => (
                 <motion.div
                   initial={{ opacity: 0, x: -10 }}

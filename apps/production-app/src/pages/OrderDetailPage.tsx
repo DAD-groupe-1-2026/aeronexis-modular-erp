@@ -144,7 +144,7 @@ export function OrderDetailPage() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 * idx }}
             key={label} 
-            className="rounded-2xl border border-white/10 bg-[#0a0a0c]/40 backdrop-blur-2xl shadow-xl p-5"
+            className="rounded-2xl border border-white/10 bg-[#0a0a0c]/80 backdrop-blur-2xl shadow-xl p-5"
           >
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-white/5 rounded-xl border border-white/5">
@@ -180,7 +180,7 @@ export function OrderDetailPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 + (index * 0.1) }}
               key={lot.id} 
-              className="rounded-2xl border border-white/10 bg-[#0a0a0c]/40 backdrop-blur-2xl shadow-2xl overflow-hidden"
+              className="rounded-2xl border border-white/10 bg-[#0a0a0c]/80 backdrop-blur-2xl shadow-2xl overflow-hidden"
             >
               {/* Lot header */}
               <div className="flex items-center justify-between gap-4 flex-wrap px-6 py-4 bg-white/5 border-b border-white/10">

@@ -1,16 +1,17 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from '@/components/Sidebar'
 import { AnimatePresence } from 'framer-motion'
 
 export function AppLayout() {
+  const location = useLocation();
   return (
     <div className="flex h-screen bg-[#030304] text-slate-200 overflow-hidden relative">
       {/* Background Image */}
-      <div 
+      <div
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-90"
         style={{ backgroundImage: `url('/background.jpeg')` }}
       />
-      
+
       {/* Dark Overlay gradient for readability and blending */}
       <div className="absolute inset-0 z-0 bg-[#030304]/60 backdrop-blur-sm"></div>
 
@@ -26,7 +27,7 @@ export function AppLayout() {
       {/* Main Content */}
       <main className="ml-56 flex-1 overflow-y-auto z-10 p-6 relative">
         <AnimatePresence mode="wait">
-          <Outlet />
+          <Outlet key={location.pathname} />
         </AnimatePresence>
       </main>
     </div>
