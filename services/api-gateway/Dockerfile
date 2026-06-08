@@ -1,7 +1,27 @@
+# ── Build stage : compile front-end apps ──────────────────────────────────────
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+COPY apps/ apps/
+COPY packages/ packages/
+COPY src/ src/
+COPY vite.config.ts index.html tsconfig.json ./
+
+RUN npm ci
+
+RUN npm run build \
+ && npm run build -w @aeronexis-dynamics/production-app \
+ && npm run build -w @aeronexis-dynamics/logistics-app
+
+# ── Runtime stage : NGINX avec assets statiques ───────────────────────────────
 FROM nginx:1.25-alpine
 
-# Copier la configuration NGINX
 COPY services/api-gateway/nginx.conf /etc/nginx/nginx.conf
+COPY --from=frontend-builder /app/dist /usr/share/nginx/portal
+COPY --from=frontend-builder /app/apps/production-app/dist /usr/share/nginx/production
+COPY --from=frontend-builder /app/apps/logistics-app/dist /usr/share/nginx/logistics
 
 EXPOSE 80
 

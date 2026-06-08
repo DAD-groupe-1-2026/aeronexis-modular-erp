@@ -14,7 +14,7 @@ export default function AppLayout() {
     queryFn: getNotifications
   });
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.length;
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
@@ -58,8 +58,8 @@ export default function AppLayout() {
                       <div className="p-4 text-center text-sm text-slate-500">Aucune notification</div>
                     ) : (
                       notifications.map(notif => (
-                        <div key={notif.id} className={`p-4 border-b border-slate-100 flex gap-3 ${notif.read ? 'opacity-60' : 'bg-blue-50/30'}`}>
-                          <AlertTriangle className={`w-5 h-5 shrink-0 ${notif.type === 'stock_alert' ? 'text-red-500' : 'text-amber-500'}`} />
+                        <div key={notif.id} className="p-4 border-b border-slate-100 flex gap-3 bg-blue-50/30">
+                          <AlertTriangle className="w-5 h-5 shrink-0 text-red-500" />
                           <div>
                             <p className="text-sm text-slate-800 leading-snug">{notif.message}</p>
                             <p className="text-xs text-slate-500 mt-1">{new Date(notif.createdAt).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}</p>

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { QueryErrorAlert } from '@aeronexis-dynamics/ui';
 import { getMaterials } from '../api/materials';
 import { getShipments } from '../api/shipments';
+import { toNumber } from '../lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function DashboardView() {
@@ -36,16 +37,15 @@ export default function DashboardView() {
     );
   }
 
-  const criticalStocks = materials.filter(m => m.available < m.minimumAlert).length;
-  const totalReserved = materials.reduce((acc, m) => acc + m.reserved, 0);
-  const totalAvailable = materials.reduce((acc, m) => acc + m.available, 0);
-  
+  const criticalStocks = materials.filter(m => toNumber(m.quantityAvailable) < toNumber(m.reorderLevel)).length;
+  const totalReserved = materials.reduce((acc, m) => acc + toNumber(m.quantityReserved), 0);
+
   const chartData = materials.map(m => ({
-    name: m.reference,
-    Disponible: m.available,
-    Réservé: m.reserved,
-    Seuil: m.minimumAlert
-  })).slice(0, 5); // top 5 for chart
+    name: m.materialCode,
+    Disponible: toNumber(m.quantityAvailable),
+    Réservé: toNumber(m.quantityReserved),
+    Seuil: toNumber(m.reorderLevel),
+  })).slice(0, 5);
 
   return (
     <div className="space-y-6">
@@ -57,28 +57,28 @@ export default function DashboardView() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <KPI 
-          title="Articles Référéncés" 
+        <KPI
+          title="Articles Référéncés"
           value={materials.length}
-          icon={PackageSearch} 
+          icon={PackageSearch}
           color="blue"
         />
-        <KPI 
-          title="Ruptures Imminentes" 
+        <KPI
+          title="Ruptures Imminentes"
           value={criticalStocks}
-          icon={AlertCircle} 
+          icon={AlertCircle}
           color="red"
         />
-        <KPI 
-          title="Unités Réservées" 
+        <KPI
+          title="Unités Réservées"
           value={totalReserved.toLocaleString()}
-          icon={TrendingDown} 
+          icon={TrendingDown}
           color="amber"
         />
-        <KPI 
-          title="Expéditions Prévues" 
+        <KPI
+          title="Expéditions Prévues"
           value={shipments.length}
-          icon={Clock} 
+          icon={Clock}
           color="emerald"
         />
       </div>
@@ -107,18 +107,18 @@ export default function DashboardView() {
             <CardTitle>Alertes Critiques</CardTitle>
           </CardHeader>
           <CardContent className="px-0 py-0 divide-y divide-slate-100">
-            {materials.filter(m => m.available < m.minimumAlert).map(mat => (
+            {materials.filter(m => toNumber(m.quantityAvailable) < toNumber(m.reorderLevel)).map(mat => (
               <div key={mat.id} className="px-6 py-4 flex items-start space-x-4">
                 <div className="bg-red-100 text-red-600 p-2 rounded-md shrink-0">
                   <AlertCircle className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-900">{mat.name}</p>
-                  <p className="text-xs text-slate-500 mt-1 uppercase font-mono">{mat.reference}</p>
+                  <p className="text-sm font-medium text-slate-900">{mat.materialName}</p>
+                  <p className="text-xs text-slate-500 mt-1 uppercase font-mono">{mat.materialCode}</p>
                   <div className="flex items-center space-x-3 mt-2 text-xs">
-                    <span className="text-red-600 font-semibold">{mat.available} {mat.unit}</span>
+                    <span className="text-red-600 font-semibold">{toNumber(mat.quantityAvailable)} {mat.unit}</span>
                     <span className="text-slate-400">/</span>
-                    <span className="text-slate-500">Seuil: {mat.minimumAlert} {mat.unit}</span>
+                    <span className="text-slate-500">Seuil: {toNumber(mat.reorderLevel)} {mat.unit}</span>
                   </div>
                 </div>
               </div>

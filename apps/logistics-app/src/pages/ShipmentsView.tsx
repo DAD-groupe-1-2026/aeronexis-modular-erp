@@ -13,20 +13,21 @@ import { formatDateTime } from '../lib/utils';
 export default function ShipmentsView() {
   const { data: shipments = [], isLoading: loading } = useQuery({ queryKey: ['shipments'], queryFn: getShipments });
   const { searchQuery = '' } = useOutletContext<{ searchQuery?: string }>() || {};
-  
-  const filteredShipments = shipments.filter(shp => 
+
+  const filteredShipments = shipments.filter(shp =>
     shp.orderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    shp.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    shp.destination.toLowerCase().includes(searchQuery.toLowerCase()) ||
     shp.trackingNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
     shp.carrier.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const getStatusBadge = (status: LogisticsShipment['status']) => {
     switch (status) {
-      case 'prepared': return <Badge variant="warning">Préparée</Badge>;
-      case 'shipped': return <Badge variant="info">En Transit</Badge>;
+      case 'preparing': return <Badge variant="warning">En préparation</Badge>;
+      case 'shipped': return <Badge variant="info">Expédiée</Badge>;
+      case 'in_transit': return <Badge variant="info">En transit</Badge>;
       case 'delivered': return <Badge variant="success">Livrée</Badge>;
-      case 'incident': return <Badge variant="danger">Incident</Badge>;
+      case 'returned': return <Badge variant="danger">Retournée</Badge>;
     }
   };
 
@@ -49,7 +50,7 @@ export default function ShipmentsView() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-40">N° Commande</TableHead>
-                <TableHead>Client</TableHead>
+                <TableHead>Destination</TableHead>
                 <TableHead>Date Prévue</TableHead>
                 <TableHead>Transporteur</TableHead>
                 <TableHead>N° Suivi</TableHead>
@@ -68,11 +69,10 @@ export default function ShipmentsView() {
                     {shp.orderId}
                   </TableCell>
                   <TableCell className="font-medium text-slate-900">
-                    {shp.clientName}
-                    <span className="block text-xs font-mono text-slate-500 mt-0.5">{shp.clientId}</span>
+                    {shp.destination.split(',')[0]?.trim() || shp.destination}
                   </TableCell>
                   <TableCell className="text-slate-600 font-mono text-sm">
-                    {formatDateTime(shp.plannedDate)}
+                    {formatDateTime(shp.scheduledDate)}
                   </TableCell>
                   <TableCell className="text-slate-700">{shp.carrier}</TableCell>
                   <TableCell className="font-mono text-xs text-blue-600 hover:underline cursor-pointer">

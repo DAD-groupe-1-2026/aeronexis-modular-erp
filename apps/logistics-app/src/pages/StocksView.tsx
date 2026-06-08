@@ -7,16 +7,16 @@ import { Button } from '../components/Button';
 import { Download, Plus, AlertCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getMaterials } from '../api/materials';
-import { formatDateTime } from '../lib/utils';
+import { formatCategory, formatDateTime, toNumber } from '../lib/utils';
 
 export default function StocksView() {
   const { data: materials = [], isLoading: loading } = useQuery({ queryKey: ['materials'], queryFn: getMaterials });
   const { searchQuery = '' } = useOutletContext<{ searchQuery?: string }>() || {};
 
-  const filteredMaterials = materials.filter(mat => 
-    mat.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    mat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    mat.family.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredMaterials = materials.filter(mat =>
+    mat.materialCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    mat.materialName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    mat.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -45,7 +45,7 @@ export default function StocksView() {
               <TableRow>
                 <TableHead className="w-32">Référence</TableHead>
                 <TableHead>Désignation</TableHead>
-                <TableHead>Famille</TableHead>
+                <TableHead>Catégorie</TableHead>
                 <TableHead className="text-right">Disponible</TableHead>
                 <TableHead className="text-right">Réservé</TableHead>
                 <TableHead>Statut</TableHead>
@@ -59,36 +59,39 @@ export default function StocksView() {
                   <TableCell colSpan={8} className="h-24 text-center">Chargement...</TableCell>
                 </TableRow>
               ) : filteredMaterials.map((mat) => {
-                const isCritical = mat.available < mat.minimumAlert;
-                
+                const available = toNumber(mat.quantityAvailable);
+                const reserved = toNumber(mat.quantityReserved);
+                const reorderLevel = toNumber(mat.reorderLevel);
+                const isCritical = available < reorderLevel;
+
                 return (
                   <TableRow key={mat.id}>
                     <TableCell className="font-mono text-sm text-slate-600 font-medium">
-                      {mat.reference}
+                      {mat.materialCode}
                     </TableCell>
-                    <TableCell className="font-medium text-slate-900">{mat.name}</TableCell>
-                    <TableCell className="text-slate-500">{mat.family}</TableCell>
+                    <TableCell className="font-medium text-slate-900">{mat.materialName}</TableCell>
+                    <TableCell className="text-slate-500">{formatCategory(mat.category)}</TableCell>
                     <TableCell className="text-right font-mono font-medium">
                       <span className={isCritical ? 'text-red-600' : 'text-slate-900'}>
-                        {mat.available} {mat.unit}
+                        {available} {mat.unit}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right font-mono text-slate-500">{mat.reserved} {mat.unit}</TableCell>
+                    <TableCell className="text-right font-mono text-slate-500">{reserved} {mat.unit}</TableCell>
                     <TableCell>
                       {isCritical ? (
                         <div className="flex items-center text-red-600 text-xs font-semibold">
                           <AlertCircle className="w-3.5 h-3.5 mr-1" />
-                          ALERTE (Min {mat.minimumAlert})
+                          ALERTE (Min {reorderLevel})
                         </div>
                       ) : (
                         <Badge variant="success">OK</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-slate-500 font-mono text-xs">
-                      {formatDateTime(mat.lastEntry)}
+                      {formatDateTime(mat.updatedAt ?? mat.createdAt ?? '')}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" className="h-8 shadow-none py-0" onClick={() => alert('Actions sur ' + mat.reference)}>Actions</Button>
+                      <Button variant="ghost" size="sm" className="h-8 shadow-none py-0" onClick={() => alert('Actions sur ' + mat.materialCode)}>Actions</Button>
                     </TableCell>
                   </TableRow>
                 );

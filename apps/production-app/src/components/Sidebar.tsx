@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard,
   ClipboardList,
@@ -8,23 +8,17 @@ import {
   LogOut,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useAuthStore } from '@aeronexis-dynamics/auth'
+import { logoutAndRedirect, useAuthStore } from '@aeronexis-dynamics/auth'
 
 const navItems = [
-  { to: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+  { to: '/', label: 'Tableau de bord', icon: LayoutDashboard },
   { to: '/orders', label: 'Ordres de fabrication', icon: ClipboardList },
   { to: '/incident/new', label: 'Signaler un incident', icon: AlertTriangle },
   { to: '/history', label: 'Historique', icon: History },
 ]
 
 export function Sidebar() {
-  const { user, logout } = useAuthStore()
-  const navigate = useNavigate()
-
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+  const { user } = useAuthStore()
 
   return (
     <aside className="fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-border bg-card">
@@ -43,7 +37,7 @@ export function Sidebar() {
           <NavLink
             key={to}
             to={to}
-            end={to === '/dashboard'}
+            end={to === '/'}
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
@@ -68,7 +62,7 @@ export function Sidebar() {
             <p className="truncate text-sm font-medium">{user?.firstName} {user?.lastName}</p>
             <p className="truncate text-xs text-muted-foreground capitalize">{user?.role === 'operator' ? 'Opérateur' : user?.role}</p>
           </div>
-          <button onClick={handleLogout} className="group rounded p-1 hover:bg-destructive/10 transition-colors" title="Se déconnecter">
+          <button onClick={() => logoutAndRedirect()} className="group rounded p-1 hover:bg-destructive/10 transition-colors" title="Se déconnecter">
             <LogOut className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-destructive transition-colors" />
           </button>
         </div>

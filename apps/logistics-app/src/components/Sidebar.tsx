@@ -1,18 +1,17 @@
 import { cn } from '../lib/utils';
 import { Package, BoxSelect, Truck, LayoutDashboard, LogOut } from 'lucide-react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@aeronexis-dynamics/auth';
+import { Link, useLocation } from 'react-router-dom';
+import { logoutAndRedirect, useAuthStore } from '@aeronexis-dynamics/auth';
 
 export function Sidebar() {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
 
   const navItems = [
-    { path: '/logistics', label: 'Vue d\'ensemble', icon: LayoutDashboard },
-    { path: '/logistics/stocks', label: 'Stocks (WMS)', icon: Package },
-    { path: '/logistics/reservations', label: 'Réservations', icon: BoxSelect },
-    { path: '/logistics/shipments', label: 'Expéditions', icon: Truck },
+    { path: '/', label: 'Vue d\'ensemble', icon: LayoutDashboard, end: true },
+    { path: '/stocks', label: 'Stocks (WMS)', icon: Package },
+    { path: '/reservations', label: 'Réservations', icon: BoxSelect },
+    { path: '/shipments', label: 'Expéditions', icon: Truck },
   ];
 
   return (
@@ -31,8 +30,9 @@ export function Sidebar() {
         <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Ménu Principal</p>
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path
-            || (item.path !== '/logistics' && location.pathname.startsWith(item.path));
+          const isActive = item.end
+            ? location.pathname === item.path || location.pathname === `${item.path}/`
+            : location.pathname.startsWith(item.path);
           
           return (
             <Link
@@ -67,7 +67,7 @@ export function Sidebar() {
           </div>
           <button
             type="button"
-            onClick={() => { logout(); navigate('/login'); }}
+            onClick={() => logoutAndRedirect()}
             className="text-slate-500 hover:text-white"
             title="Déconnexion"
           >

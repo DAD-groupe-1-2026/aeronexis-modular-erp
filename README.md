@@ -25,7 +25,10 @@ L'application est découpée en 4 couches distinctes :
 
 ```text
 aeronexis-modular-erp/
+├── portal/                      # Point d'entrée UI (Shell) — login centralisé + redirection
 ├── apps/                        # Couche 1 : Applications métiers (ex: production-app)
+│   ├── production-app/
+│   └── logistics-app/
 ├── packages/                    # Couche 2 : Modules partagés (auth, api-client, ui, shared-types)
 ├── services/                    # Couche 3 & 4 : Microservices
 │   ├── api-gateway/             # Configuration NGINX et Dockerfile
@@ -140,16 +143,26 @@ docker exec erp-sales-service npm run db:seed
 ```
 
 **Comptes de test disponibles :**
-- **Administrateur** : `admin@aeronexis.com` / `Admin123!`
-- **Opérateur** : `operator@aeronexis.com` / `Operateur123!` (Redirige vers le Dashboard Production)
+- **Administrateur** : `admin@aeronexis.com` / `Admin123!` (Redirige vers `/admin/` — stub)
+- **Opérateur** : `operator@aeronexis.com` / `Operateur123!` (Redirige vers `/production/dashboard`)
+- **Logistique** : `logistics@aeronexis.com` / `Logistique123!` (Redirige vers `/logistics/`)
 
-### 4. Démarrage de l'application Front-end
-```bash
-cd apps/production-app
-npm run dev
-```
-L'application `production-app` sera accessible à l'adresse : [http://localhost:5173](http://localhost:5173).  
-*(Toutes les requêtes d'API seront envoyées vers la passerelle NGINX fonctionnant sur le port 80 de `localhost`).*
+### 4. Accès aux applications (Front-end)
+
+Le **portail** (`src/`) est le point d'entrée utilisateur unique. Les apps métier n'ont plus de page `/login` locale : toute session non authentifiée est renvoyée vers le portail.
+
+Grâce à la commande Docker lancée à l'étape 2, **toutes les applications front-end ont déjà été compilées et sont servies par NGINX** en mode production (fichier `nginx.conf`). 
+
+Vous n'avez pas besoin de lancer de serveur Vite (plus besoin de `npm run dev:front`).
+
+**Accès natif (via NGINX sur le port 80) :**
+- Portail / login : [http://localhost/](http://localhost/)
+- Production : [http://localhost/production/](http://localhost/production/)
+- Logistique : [http://localhost/logistics/](http://localhost/logistics/)
+
+*(Le `localStorage` est naturellement partagé entre toutes les applications car elles tournent toutes sur le même domaine `localhost`, ce qui évite les boucles de redirection au login).*
+
+> **Note de développement** : Si vous souhaitez développer en local avec le hot-reloading (Vite), vous pouvez utiliser `npm run dev:front` (qui lance les serveurs sur les ports 4000, 4001, 4002) et modifier le `docker-compose.yml` pour monter le fichier `nginx.dev.conf` en volume.
 
 ---
 
@@ -176,12 +189,19 @@ L'application `production-app` sera accessible à l'adresse : [http://localhost:
 ---
 
 ## 🔐 Configuration de l'environnement Front-end
-Par défaut, le flux de connexion (Login flow) nécessite l'API Gateway. 
-Si vous souhaitez développer le front-end de manière isolée sans la couche Docker, modifiez le fichier `apps/production-app/.env.development` :
+
+Les variables d'environnement sont centralisées à la racine du monorepo pour garantir que toutes les applications partagent la même configuration réseau.
+
+### Variables partagées (`.env.development` / `.env.production`)
 ```env
-VITE_AUTH_BYPASS=true
+VITE_APP_URL_OPERATOR=/production/
+VITE_APP_URL_LOGISTICS=/logistics/
+VITE_APP_URL_SALES=/sales/
+VITE_APP_URL_ADMIN=/admin/
+VITE_PORTAL_URL=/
 ```
-Cela activera un bypass simulant un utilisateur authentifié et injectera un "Mock Token".
+
+Toutes les routes utilisent désormais des chemins relatifs. Cela permet à NGINX de gérer le routage dynamiquement sans se soucier des ports (fini les `http://localhost:4000/...`), reproduisant ainsi fidèlement l'environnement de production.
 
 ---
 

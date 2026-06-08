@@ -85,28 +85,62 @@ export interface HistoryEntry {
   detail?: string
 }
 
-// ─── Logistics domain ────────────────────────────────────────────────────────
+// ─── Logistics domain (aligné sur logistics-service / Sequelize) ─────────────
 
-export type StockAlertLevel = 'ok' | 'low' | 'critical'
+export type StockCategory = 'raw_material' | 'component' | 'consumable' | 'packaging'
 
-export interface StockItem {
+export interface LogisticsStockItem {
   id: string
-  reference: string
-  name: string
-  quantity: number
+  materialCode: string
+  materialName: string
+  category: StockCategory
+  quantityAvailable: number | string
+  quantityReserved: number | string
   unit: string
-  minThreshold: number
-  alertLevel: StockAlertLevel
-  warehouseLocation: string
+  reorderLevel: number | string
+  location?: string | null
+  supplier?: string | null
+  updatedAt?: string
+  createdAt?: string
 }
 
-export interface Shipment {
+export type ReservationStatus = 'pending' | 'confirmed' | 'fulfilled' | 'cancelled'
+
+export interface LogisticsReservation {
   id: string
-  reference: string
+  stockItemId: string
+  workOrderId: string
+  quantity: number | string
+  status: ReservationStatus
+  reservedBy: string
+  createdAt?: string
+  updatedAt?: string
+  stockItem?: Pick<LogisticsStockItem, 'materialCode' | 'materialName'>
+}
+
+export type ShipmentStatus = 'preparing' | 'shipped' | 'in_transit' | 'delivered' | 'returned'
+
+export interface LogisticsShipment {
+  id: string
+  trackingNumber: string
+  orderId: string
   destination: string
-  items: { stockItemId: string; quantity: number }[]
+  carrier: string
+  status: ShipmentStatus
   scheduledDate: string
-  status: 'pending' | 'in_transit' | 'delivered'
+  deliveredDate?: string | null
+  weight?: number | string | null
+  notes?: string | null
+  createdAt?: string
+  updatedAt?: string
+}
+
+/** Alerte dérivée côté client à partir des seuils de stock */
+export interface LogisticsStockAlert {
+  id: string
+  stockItemId: string
+  message: string
+  createdAt: string
 }
 
 // ─── Sales domain ─────────────────────────────────────────────────────────────

@@ -4,6 +4,8 @@ import path from 'path'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
+  base: '/logistics/',
+  envDir: '../../',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -11,8 +13,8 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5174,
-    strictPort: false,
+    port: 4002,
+    strictPort: true,
     host: true,
   },
 })

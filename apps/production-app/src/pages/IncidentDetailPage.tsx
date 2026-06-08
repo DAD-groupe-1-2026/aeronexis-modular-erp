@@ -60,7 +60,7 @@ export function IncidentDetailPage() {
           onRetry={() => refetch()}
           title="Erreur lors du chargement de l'incident"
         />
-        <Link to="/dashboard" className="text-primary text-sm inline-block">← Retour au tableau de bord</Link>
+        <Link to="/" className="text-primary text-sm inline-block">← Retour au tableau de bord</Link>
       </div>
     )
   }
@@ -69,7 +69,7 @@ export function IncidentDetailPage() {
     return (
       <div className="p-8 space-y-4">
         <p className="text-muted-foreground">Incident introuvable.</p>
-        <Link to="/dashboard" className="text-primary text-sm inline-block">← Retour au tableau de bord</Link>
+        <Link to="/" className="text-primary text-sm inline-block">← Retour au tableau de bord</Link>
       </div>
     )
   }

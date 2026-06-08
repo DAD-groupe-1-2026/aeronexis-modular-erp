@@ -3,13 +3,46 @@
   "version": "1.0.0",
   "private": true,
   "description": "Monorepo for AERONEXIS Dynamics",
+  "type": "module",
   "workspaces": [
     "apps/*",
     "packages/*",
     "services/*"
   ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit",
+    "dev:portal": "npm run dev",
+    "dev:production": "npm run dev -w @aeronexis-dynamics/production-app",
+    "dev:logistics": "npm run dev -w @aeronexis-dynamics/logistics-app",
+    "dev:front": "concurrently \"npm run dev:portal\" \"npm run dev:production\" \"npm run dev:logistics\""
+  },
+  "dependencies": {
+    "@aeronexis-dynamics/api-client": "*",
+    "@aeronexis-dynamics/auth": "*",
+    "@aeronexis-dynamics/shared-types": "*",
+    "@tailwindcss/vite": "^4.1.14",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "react-router-dom": "^7.17.0",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.16",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "4.7.0",
+    "concurrently": "^9.1.2",
+    "tailwindcss": "^4.1.14",
+    "typescript": "~5.6.2",
+    "vite": "5.4.21"
+  },
   "overrides": {
     "vite": "5.4.21",
-    "@vitejs/plugin-react": "4.7.0"
+    "@vitejs/plugin-react": "4.7.0",
+    "@types/react": "^19.2.16",
+    "@types/react-dom": "^19.2.3",
+    "react-router-dom": "^7.17.0"
   }
 }

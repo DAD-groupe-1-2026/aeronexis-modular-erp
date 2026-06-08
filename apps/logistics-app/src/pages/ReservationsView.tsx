@@ -7,16 +7,16 @@ import { Button } from '../components/Button';
 import { Lock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getReservations } from '../api/reservations';
-import { formatDateTime } from '../lib/utils';
+import { formatDateTime, toNumber } from '../lib/utils';
 
 export default function ReservationsView() {
   const { data: reservations = [], isLoading: loading } = useQuery({ queryKey: ['reservations'], queryFn: getReservations });
   const { searchQuery = '' } = useOutletContext<{ searchQuery?: string }>() || {};
-  
-  const filteredReservations = reservations.filter(res => 
+
+  const filteredReservations = reservations.filter(res =>
     res.workOrderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    res.workOrderRef.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    res.materialId.toLowerCase().includes(searchQuery.toLowerCase())
+    (res.stockItem?.materialName ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    res.stockItemId.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -38,7 +38,7 @@ export default function ReservationsView() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-40">N° Ordre (OF)</TableHead>
-                <TableHead>Référence Article</TableHead>
+                <TableHead>Article</TableHead>
                 <TableHead className="text-right">Qté Réservée</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead>Date d'Allocation</TableHead>
@@ -56,22 +56,23 @@ export default function ReservationsView() {
                     {res.workOrderId}
                   </TableCell>
                   <TableCell className="font-medium text-slate-900">
-                    {res.workOrderRef} 
-                    <span className="block text-xs text-slate-500 font-mono mt-0.5.">Article ID: {res.materialId}</span>
+                    {res.stockItem?.materialName ?? res.stockItem?.materialCode ?? '—'}
+                    <span className="block text-xs text-slate-500 font-mono mt-0.5.">stockItemId: {res.stockItemId}</span>
                   </TableCell>
                   <TableCell className="text-right font-mono font-medium text-slate-800">
-                    {res.quantityReserved}
+                    {toNumber(res.quantity)}
                   </TableCell>
                   <TableCell>
-                    {res.status === 'active' && <Badge variant="warning">Active</Badge>}
-                    {res.status === 'consumed' && <Badge variant="success">Consommée</Badge>}
+                    {res.status === 'pending' && <Badge variant="warning">En attente</Badge>}
+                    {res.status === 'confirmed' && <Badge variant="warning">Confirmée</Badge>}
+                    {res.status === 'fulfilled' && <Badge variant="success">Honorée</Badge>}
                     {res.status === 'cancelled' && <Badge variant="default">Annulée</Badge>}
                   </TableCell>
                   <TableCell className="text-slate-500 font-mono text-xs">
-                    {formatDateTime(res.reservationDate)}
+                    {formatDateTime(res.createdAt ?? '')}
                   </TableCell>
                   <TableCell className="text-right">
-                    {res.status === 'active' && (
+                    {(res.status === 'pending' || res.status === 'confirmed') && (
                        <Button variant="ghost" size="sm" className="h-8 text-blue-600 hover:text-blue-700" onClick={() => alert('Gestion de la réservation ' + res.workOrderId)}>Gérer</Button>
                     )}
                   </TableCell>

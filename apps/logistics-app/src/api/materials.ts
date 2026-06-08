@@ -1,9 +1,8 @@
 import { apiClient } from '@aeronexis-dynamics/api-client'
-import type { LogisticsStock, LogisticsStockDto } from '@aeronexis-dynamics/shared-types'
-import { mapStockItem } from './mappers'
+import type { LogisticsStockItem } from '@aeronexis-dynamics/shared-types'
 
-export async function getMaterials(): Promise<LogisticsStock[]> {
-  const res = await apiClient.get<LogisticsStockDto[]>('/api/logistics/stock')
+export async function getMaterials(): Promise<LogisticsStockItem[]> {
+  const res = await apiClient.get<LogisticsStockItem[]>('/api/logistics/stock')
   if (res.status === 'failure') throw new Error(res.error?.message)
-  return res.data.map(mapStockItem)
+  return res.data
 }
