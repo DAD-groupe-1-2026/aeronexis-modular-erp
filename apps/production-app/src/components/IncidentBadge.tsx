@@ -1,11 +1,11 @@
-import { Badge } from '@/components/Badge'
+import { Badge } from '@aeronexis-dynamics/ui'
 import type { IncidentSeverity } from '@aeronexis-dynamics/shared-types'
 
-const config: Record<IncidentSeverity, { label: string; variant: 'secondary' | 'warning' | 'destructive' }> = {
-  low: { label: 'Faible', variant: 'secondary' },
+const config: Record<IncidentSeverity, { label: string; variant: 'default' | 'warning' | 'error' }> = {
+  low: { label: 'Faible', variant: 'default' },
   medium: { label: 'Moyenne', variant: 'warning' },
-  high: { label: 'Haute', variant: 'destructive' },
-  critical: { label: 'Critique', variant: 'destructive' },
+  high: { label: 'Haute', variant: 'error' },
+  critical: { label: 'Critique', variant: 'error' },
 }
 
 interface IncidentBadgeProps {

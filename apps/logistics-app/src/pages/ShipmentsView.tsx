@@ -1,9 +1,9 @@
 import React from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Card, CardContent } from '../components/Card';
+import { Card } from '@aeronexis-dynamics/ui';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/Table';
-import { Badge } from '../components/Badge';
-import { Button } from '../components/Button';
+import { Badge } from '@aeronexis-dynamics/ui';
+import { Button } from '@aeronexis-dynamics/ui';
 import { Truck } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getShipments } from '../api/shipments';
@@ -27,7 +27,7 @@ export default function ShipmentsView() {
       case 'shipped': return <Badge variant="info">Expédiée</Badge>;
       case 'in_transit': return <Badge variant="info">En transit</Badge>;
       case 'delivered': return <Badge variant="success">Livrée</Badge>;
-      case 'returned': return <Badge variant="danger">Retournée</Badge>;
+      case 'returned': return <Badge variant="error">Retournée</Badge>;
     }
   };
 
@@ -45,7 +45,7 @@ export default function ShipmentsView() {
       </div>
 
       <Card>
-        <CardContent className="p-0">
+        <div className="">
           <Table>
             <TableHeader>
               <TableRow>
@@ -88,7 +88,7 @@ export default function ShipmentsView() {
               ))}
             </TableBody>
           </Table>
-        </CardContent>
+        </div>
       </Card>
     </div>
   );

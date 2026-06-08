@@ -11,20 +11,21 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@aeronexis-dynamics/api-client": "*",
+    "@aeronexis-dynamics/auth": "*",
+    "@aeronexis-dynamics/shared-types": "*",
+    "@aeronexis-dynamics/ui": "*",
+    "@tanstack/react-query": "^5.62.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^12.40.0",
+    "lucide-react": "^0.462.0",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-router-dom": "^7.17.0",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
     "tailwind-merge": "^2.5.4",
-    "lucide-react": "^0.462.0",
-    "date-fns": "^4.1.0",
-    "@tanstack/react-query": "^5.62.0",
-    "zustand": "^5.0.2",
-    "@aeronexis-dynamics/shared-types": "*",
-    "@aeronexis-dynamics/api-client": "*",
-    "@aeronexis-dynamics/auth": "*",
-    "@aeronexis-dynamics/ui": "*"
+    "zustand": "^5.0.2"
   },
   "devDependencies": {
     "@types/react": "^19.2.16",

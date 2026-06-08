@@ -1,9 +1,9 @@
 import React from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Card, CardContent } from '../components/Card';
+import { Card } from '@aeronexis-dynamics/ui';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/Table';
-import { Badge } from '../components/Badge';
-import { Button } from '../components/Button';
+import { Badge } from '@aeronexis-dynamics/ui';
+import { Button } from '@aeronexis-dynamics/ui';
 import { Lock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getReservations } from '../api/reservations';
@@ -33,7 +33,7 @@ export default function ReservationsView() {
       </div>
 
       <Card>
-        <CardContent className="p-0">
+        <div className="">
           <Table>
             <TableHeader>
               <TableRow>
@@ -80,7 +80,7 @@ export default function ReservationsView() {
               ))}
             </TableBody>
           </Table>
-        </CardContent>
+        </div>
       </Card>
     </div>
   );
