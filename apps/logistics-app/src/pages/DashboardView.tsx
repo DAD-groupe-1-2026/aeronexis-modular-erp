@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '../components/Card';
+import { Card } from '@aeronexis-dynamics/ui';
 import { PackageSearch, TrendingDown, AlertCircle, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { QueryErrorAlert } from '@aeronexis-dynamics/ui';
@@ -85,10 +85,10 @@ export default function DashboardView() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="col-span-2">
-          <CardHeader>
-            <CardTitle>Niveaux de Stock (Top 5 Références)</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6 h-80">
+          <div className="px-5 py-4 border-b border-white/10">
+            <p className="text-sm font-semibold">Niveaux de Stock (Top 5 Références)</p>
+          </div>
+          <div className="p-6 h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
@@ -99,14 +99,14 @@ export default function DashboardView() {
                 <Bar dataKey="Réservé" stackId="a" fill="#CBD5E1" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </CardContent>
+          </div>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Alertes Critiques</CardTitle>
-          </CardHeader>
-          <CardContent className="px-0 py-0 divide-y divide-slate-100">
+          <div className="px-5 py-4 border-b border-white/10">
+            <p className="text-sm font-semibold">Alertes Critiques</p>
+          </div>
+          <div className="divide-y divide-white/5">
             {materials.filter(m => toNumber(m.quantityAvailable) < toNumber(m.reorderLevel)).map(mat => (
               <div key={mat.id} className="px-6 py-4 flex items-start space-x-4">
                 <div className="bg-red-100 text-red-600 p-2 rounded-md shrink-0">
@@ -128,7 +128,7 @@ export default function DashboardView() {
                 Aucune alerte de stock.
               </div>
             )}
-          </CardContent>
+          </div>
         </Card>
       </div>
     </div>
@@ -145,7 +145,7 @@ function KPI({ title, value, icon: Icon, color }: { title: string; value: string
 
   return (
     <Card>
-      <CardContent className="p-6 flex items-center space-x-4">
+      <div className="p-6 flex items-center space-x-4">
         <div className={`p-4 rounded-lg ${colors[color]}`}>
           <Icon className="w-6 h-6" />
         </div>
@@ -153,7 +153,7 @@ function KPI({ title, value, icon: Icon, color }: { title: string; value: string
           <p className="text-sm font-medium text-slate-500">{title}</p>
           <p className="text-2xl font-bold text-slate-900">{value}</p>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 }

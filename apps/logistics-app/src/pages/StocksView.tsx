@@ -1,9 +1,9 @@
 import React from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Card, CardContent } from '../components/Card';
+import { Card } from '@aeronexis-dynamics/ui';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/Table';
-import { Badge } from '../components/Badge';
-import { Button } from '../components/Button';
+import { Badge } from '@aeronexis-dynamics/ui';
+import { Button } from '@aeronexis-dynamics/ui';
 import { Download, Plus, AlertCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getMaterials } from '../api/materials';
@@ -39,7 +39,7 @@ export default function StocksView() {
       </div>
 
       <Card>
-        <CardContent className="p-0">
+        <div className="">
           <Table>
             <TableHeader>
               <TableRow>
@@ -98,7 +98,7 @@ export default function StocksView() {
               })}
             </TableBody>
           </Table>
-        </CardContent>
+        </div>
       </Card>
     </div>
   );

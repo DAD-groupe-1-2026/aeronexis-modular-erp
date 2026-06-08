@@ -1,5 +1,5 @@
 import { Progress } from '@/components/Progress'
-import { Badge } from '@/components/Badge'
+import { Badge } from '@aeronexis-dynamics/ui'
 import type { Lot, LotStatus } from '@aeronexis-dynamics/shared-types'
 
 const statusLabel: Record<LotStatus, string> = {
@@ -8,8 +8,8 @@ const statusLabel: Record<LotStatus, string> = {
   done: 'Terminé',
 }
 
-const statusVariant: Record<LotStatus, 'secondary' | 'warning' | 'success'> = {
-  planned: 'secondary',
+const statusVariant: Record<LotStatus, 'default' | 'warning' | 'success'> = {
+  planned: 'default',
   in_progress: 'warning',
   done: 'success',
 }
