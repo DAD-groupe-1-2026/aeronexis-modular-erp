@@ -1,6 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { RoleRedirector } from '../pages/RoleRedirector'
-import { Login } from '../pages/Login'
+import Login from '../pages/Login'
 import { NotFoundPage } from '../pages/NotFoundPage'
 
 export const router = createBrowserRouter([

@@ -7,6 +7,7 @@ COPY package.json package-lock.json ./
 COPY apps/ apps/
 COPY packages/ packages/
 COPY src/ src/
+COPY public/ public/
 COPY vite.config.ts index.html tsconfig.json ./
 
 RUN npm ci
