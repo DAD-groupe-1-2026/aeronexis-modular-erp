@@ -8,8 +8,8 @@
     "packages/*",
     "services/*"
   ],
-  "overrides": {
-    "vite": "5.4.21",
-    "@vitejs/plugin-react": "4.7.0"
+  "scripts": {
+  "start": "node src/index.js",
+  "dev": "nodemon src/index.js"
   }
 }
