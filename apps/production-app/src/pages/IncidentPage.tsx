@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, AlertTriangle } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Textarea, Select, Label } from '@/components/ui/form'
-import { Badge } from '@/components/ui/badge'
-import { useOrders } from '@/hooks/queries/useOrders'
-import { useReportIncident } from '@/hooks/mutations/useReportIncident'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/Card'
+import { Button } from '@/components/Button'
+import { Textarea, Select, Label } from '@/components/Form'
+import { Badge } from '@/components/Badge'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
+import { getOrders } from '@/api/orders'
+import { createIncident } from '@/api/incidents'
 import type { IncidentSeverity } from '@aeronexis-dynamics/shared-types'
 
 const severityConfig: Record<
@@ -22,8 +24,15 @@ const severityConfig: Record<
 export function IncidentPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { data: orders = [] } = useOrders()
-  const reportIncident = useReportIncident()
+  const queryClient = useQueryClient()
+  const { data: orders = [], isError: ordersError, error: ordersErr, refetch: refetchOrders } = useQuery({ queryKey: ['orders'], queryFn: getOrders })
+  const reportIncident = useMutation({
+    mutationFn: (payload: { lotId: string; severity: IncidentSeverity; description: string }) => createIncident(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incidents'] })
+      queryClient.invalidateQueries({ queryKey: ['history'] })
+    },
+  })
 
   const allLots = orders.flatMap((wo) => wo.lots)
   const [lotId, setLotId] = useState(searchParams.get('lot') ?? '')
@@ -71,6 +80,14 @@ export function IncidentPage() {
           </p>
         </div>
       </div>
+
+      {ordersError && (
+        <QueryErrorAlert
+          error={ordersErr}
+          onRetry={() => refetchOrders()}
+          title="Erreur lors du chargement des lots"
+        />
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <Card>
@@ -159,8 +176,17 @@ export function IncidentPage() {
           </div>
         )}
 
+        {reportIncident.isError && (
+          <QueryErrorAlert
+            error={reportIncident.error}
+            onRetry={() => reportIncident.reset()}
+            retryLabel="Fermer"
+            title="Échec de l'envoi du signalement"
+          />
+        )}
+
         <div className="flex justify-end gap-3">
-          <Link to="/"><Button type="button" variant="outline">Annuler</Button></Link>
+          <Link to="/dashboard"><Button type="button" variant="outline">Annuler</Button></Link>
           <Button
             type="submit"
             disabled={!lotId || !description.trim() || reportIncident.isPending}

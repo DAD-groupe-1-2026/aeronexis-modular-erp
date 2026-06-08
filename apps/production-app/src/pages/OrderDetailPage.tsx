@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, AlertTriangle, Package, Cpu, CheckCircle2, Clock, Calendar } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
-import { Select } from '@/components/ui/form'
-import { useLotDetail } from '@/hooks/queries/useLotDetail'
-import { useUpdateLotStatus } from '@/hooks/mutations/useUpdateLotStatus'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card'
+import { Badge } from '@/components/Badge'
+import { Button } from '@/components/Button'
+import { Progress } from '@/components/Progress'
+import { Select } from '@/components/Form'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
+import { getOrderById, updateLotStatus } from '@/api/orders'
 import type { LotStatus } from '@aeronexis-dynamics/shared-types'
 
 const statusLabel: Record<LotStatus, string> = {
@@ -25,14 +26,39 @@ const statusVariant: Record<LotStatus, 'secondary' | 'warning' | 'success'> = {
 export function OrderDetailPage() {
   const { orderId = '' } = useParams<{ orderId: string }>()
   const navigate = useNavigate()
-  const { data: workOrder, isLoading } = useLotDetail(orderId)
-  const updateLot = useUpdateLotStatus(orderId)
+  const queryClient = useQueryClient()
+  const { data: workOrder, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['orders', orderId],
+    queryFn: () => getOrderById(orderId),
+    enabled: Boolean(orderId),
+  })
+  const updateLot = useMutation({
+    mutationFn: ({ lotId, status, completionPercent }: { lotId: string; status: LotStatus; completionPercent: number }) =>
+      updateLotStatus(lotId, status, completionPercent),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders', orderId] })
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+    },
+  })
 
   const [lotStatuses, setLotStatuses] = useState<Record<string, LotStatus>>({})
   const [lotProgress, setLotProgress] = useState<Record<string, number>>({})
 
   if (isLoading) {
     return <div className="p-8 text-sm text-muted-foreground">Chargement...</div>
+  }
+
+  if (isError) {
+    return (
+      <div className="p-8 space-y-4">
+        <QueryErrorAlert
+          error={error}
+          onRetry={() => refetch()}
+          title="Erreur lors du chargement de l'ordre"
+        />
+        <Link to="/orders" className="text-primary text-sm inline-block">← Retour aux ordres</Link>
+      </div>
+    )
   }
 
   if (!workOrder) {
@@ -100,6 +126,15 @@ export function OrderDetailPage() {
           </Card>
         ))}
       </div>
+
+      {updateLot.isError && (
+        <QueryErrorAlert
+          error={updateLot.error}
+          onRetry={() => updateLot.reset()}
+          retryLabel="Fermer"
+          title="Échec de la mise à jour du lot"
+        />
+      )}
 
       <div className="space-y-4">
         <h2 className="font-semibold text-lg">Lots de fabrication</h2>

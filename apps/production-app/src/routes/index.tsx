@@ -1,12 +1,13 @@
 import { lazy, Suspense } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
-import { LoginPage, ProtectedRoute } from '@aeronexis-dynamics/auth'
-import { AppLayout } from '@/components/layout/AppLayout'
+import { LoginPage, ProtectedRoute, RoleRedirector } from '@aeronexis-dynamics/auth'
+import { AppLayout } from '@/AppLayout'
 
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })))
 const OrdersPage = lazy(() => import('@/pages/OrdersPage').then((m) => ({ default: m.OrdersPage })))
 const OrderDetailPage = lazy(() => import('@/pages/OrderDetailPage').then((m) => ({ default: m.OrderDetailPage })))
 const IncidentPage = lazy(() => import('@/pages/IncidentPage').then((m) => ({ default: m.IncidentPage })))
+const IncidentDetailPage = lazy(() => import('@/pages/IncidentDetailPage').then((m) => ({ default: m.IncidentDetailPage })))
 const HistoryPage = lazy(() => import('@/pages/HistoryPage').then((m) => ({ default: m.HistoryPage })))
 
 const Loading = () => (
@@ -16,6 +17,10 @@ const Loading = () => (
 )
 
 export const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <RoleRedirector />,
+  },
   {
     path: '/login',
     element: <LoginPage />,
@@ -27,7 +32,7 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           {
-            path: '/',
+            path: '/dashboard',
             element: <Suspense fallback={<Loading />}><DashboardPage /></Suspense>,
           },
           {
@@ -41,6 +46,10 @@ export const router = createBrowserRouter([
           {
             path: '/incident/new',
             element: <Suspense fallback={<Loading />}><IncidentPage /></Suspense>,
+          },
+          {
+            path: '/incidents/:incidentId',
+            element: <Suspense fallback={<Loading />}><IncidentDetailPage /></Suspense>,
           },
           {
             path: '/history',

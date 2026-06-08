@@ -2,8 +2,5 @@
   "name": "@aeronexis-dynamics/api-gateway",
   "version": "1.0.0",
   "private": true,
-  "description": "API Gateway - AERONEXIS Dynamics",
-  "scripts": {
-    "start": "echo \"start gateway\""
-  }
+  "description": "API Gateway — NGINX reverse proxy, JWT validation middleware, routing"
 }

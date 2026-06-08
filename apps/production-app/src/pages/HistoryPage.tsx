@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ClipboardList, AlertTriangle, CheckCircle2, ArrowUpRight, Search } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/form'
-import { useHistory } from '@/hooks/queries/useHistory'
+import { Card, CardContent } from '@/components/Card'
+import { Input } from '@/components/Form'
+import { useQuery } from '@tanstack/react-query'
+import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
+import { getHistory } from '@/api/incidents'
 import type { HistoryEntry } from '@aeronexis-dynamics/shared-types'
 
 const actionIcon: Record<string, React.ReactNode> = {
@@ -29,7 +31,7 @@ function groupByDate(entries: HistoryEntry[]) {
 }
 
 export function HistoryPage() {
-  const { data: history = [], isLoading } = useHistory()
+  const { data: history = [], isLoading, isError, error, refetch } = useQuery({ queryKey: ['history'], queryFn: getHistory })
   const [search, setSearch] = useState('')
 
   const filtered = history.filter(
@@ -43,6 +45,18 @@ export function HistoryPage() {
 
   if (isLoading) {
     return <div className="p-8 text-sm text-muted-foreground">Chargement de l'historique...</div>
+  }
+
+  if (isError) {
+    return (
+      <div className="p-8">
+        <QueryErrorAlert
+          error={error}
+          onRetry={() => refetch()}
+          title="Erreur lors du chargement de l'historique"
+        />
+      </div>
+    )
   }
 
   return (
