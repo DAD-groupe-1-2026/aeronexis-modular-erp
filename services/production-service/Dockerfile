@@ -10,3 +10,4 @@ COPY services/production-service/src ./src
 EXPOSE 3002
 
 CMD ["node", "src/index.js"]
+    

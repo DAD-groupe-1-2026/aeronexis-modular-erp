@@ -16,6 +16,10 @@ services:
   mongodb:
     image: mongo:6
     container_name: erp-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_INITDB_DATABASE: aeronexis_mongodb
     ports:
       - "27017:27017"
     volumes:
@@ -58,6 +62,7 @@ services:
       - production-service
       - logistics-service
       - sales-service
+      - traceability-service
     networks:
       - aeronexis-network
 
@@ -131,6 +136,28 @@ services:
     depends_on:
       - postgres
       - rabbitmq
+    networks:
+      - aeronexis-network
+
+  traceability-service:
+    build:
+      context: ../../
+      dockerfile: services/traceability-service/Dockerfile
+
+    container_name: erp-traceability-service
+
+    ports:
+      - "3005:3005"
+
+    environment:
+      PORT: 3005
+      MONGO_URI: mongodb://admin:admin@mongodb:27017/aeronexis_mongodb?authSource=admin
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+
+    depends_on:
+      - mongodb
+      - rabbitmq
+
     networks:
       - aeronexis-network
 

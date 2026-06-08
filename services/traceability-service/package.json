@@ -4,6 +4,11 @@
   "private": true,
   "description": "Traceability and audit trail service - AERONEXIS Dynamics",
   "scripts": {
-    "start": "echo \"start traceability-service\""
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "amqplib": "^2.0.1",
+    "mongoose": "^9.6.3",
+    "express": "^4.18.0"
   }
 }
