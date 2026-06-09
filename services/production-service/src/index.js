@@ -23,9 +23,16 @@ sequelize
   .then(async () => {
     console.log('Database connected.')
     await connectRabbitMQ()
-    app.listen(PORT, () =>
-      console.log(`production-service running on port ${PORT}`),
-    )
+    app.listen(PORT, async () => {
+      console.log(`[PRODUCTION] Service listening on port ${PORT}`)
+      
+      try {
+        const { setupConsumers } = require('./consumer')
+        await setupConsumers()
+      } catch (err) {
+        console.error('Failed to setup consumers:', err)
+      }
+    })
   })
   .catch((err) => {
     console.error('Failed to connect to database:', err)

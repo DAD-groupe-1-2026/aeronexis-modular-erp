@@ -18,7 +18,7 @@ app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'auth-servic
 
 // Connexion DB puis démarrage
 sequelize
-  .authenticate()
+  .sync({ alter: true })
   .then(() => {
     console.log('Database connected.')
     return app.listen(PORT, () =>

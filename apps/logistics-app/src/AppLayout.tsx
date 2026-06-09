@@ -4,7 +4,7 @@ import { Bell, Search, AlertTriangle, Package, BoxSelect, Truck, LayoutDashboard
 import { useQuery } from '@tanstack/react-query';
 import { getNotifications } from './api/notifications';
 import { AnimatePresence } from 'framer-motion';
-import { AppLayout as SharedAppLayout, Sidebar, TopHeader } from '@aeronexis-dynamics/ui';
+import { AppLayout as SharedAppLayout, Sidebar, TopHeader, useNotifications } from '@aeronexis-dynamics/ui';
 import { useAuthStore, logoutAndRedirect } from '@aeronexis-dynamics/auth';
 
 const navItems = [
@@ -20,10 +20,7 @@ export default function AppLayout() {
   const location = useLocation();
   const { user } = useAuthStore();
   
-  const { data: notifications = [] } = useQuery({
-    queryKey: ['notifications'],
-    queryFn: getNotifications
-  });
+  const notifications = useNotifications('logistics');
 
   const unreadCount = notifications.length;
 
@@ -36,7 +33,7 @@ export default function AppLayout() {
       unreadCount={unreadCount}
       showNotifications={showNotifications}
       onToggleNotifications={() => setShowNotifications(!showNotifications)}
-      siteName="SITE ALPHA"
+      siteName={user?.siteName || "SITE ALPHA"}
     />
   );
 

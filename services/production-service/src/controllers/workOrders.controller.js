@@ -81,4 +81,38 @@ async function updateLot(req, res) {
   }
 }
 
-module.exports = { list, getOne, create, update, updateLot }
+// POST /api/production/lots/:id/request-materials
+async function requestMaterials(req, res) {
+  try {
+    const lot = await Lot.findByPk(req.params.id, {
+      include: [
+        { model: Material, as: 'materials' },
+        { model: WorkOrder, as: 'workOrder' }
+      ]
+    })
+    
+    if (!lot) return fail(res, 'NOT_FOUND', 'Lot introuvable', 404)
+    
+    // Pour chaque matière du lot, on publie l'événement de demande
+    const { publishEvent, EVENTS } = require('@aeronexis/event-bus')
+    
+    for (const mat of lot.materials) {
+      if (mat.available < mat.quantity) {
+        await publishEvent(EVENTS.MATERIAL_REQUESTED, 'production-service', {
+          lotId: lot.id,
+          workOrderId: lot.workOrderId,
+          materialCode: mat.reference,
+          quantity: mat.quantity - mat.available,
+          requestedBy: req.user ? (req.user.firstName ? `${req.user.firstName} ${req.user.lastName}` : req.user.email) : 'system',
+          siteName: req.user ? req.user.siteName : 'Site Inconnu'
+        })
+      }
+    }
+    
+    ok(res, { message: 'Demande envoyée à la logistique' })
+  } catch (err) {
+    fail(res, 'SERVER_ERROR', err.message)
+  }
+}
+
+module.exports = { list, getOne, create, update, updateLot, requestMaterials }

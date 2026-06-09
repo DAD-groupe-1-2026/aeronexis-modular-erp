@@ -8,7 +8,7 @@ import { Progress } from '@/components/Progress'
 import { Select } from '@/components/Form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
-import { getOrderById, updateLotStatus } from '@/api/orders'
+import { getOrderById, updateLotStatus, requestMaterials } from '@/api/orders'
 import type { LotStatus } from '@aeronexis-dynamics/shared-types'
 
 const statusLabel: Record<LotStatus, string> = {
@@ -50,6 +50,14 @@ export function OrderDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders', orderId] })
       queryClient.invalidateQueries({ queryKey: ['orders'] })
+    },
+  })
+
+  const requestMats = useMutation({
+    mutationFn: (lotId: string) => requestMaterials(lotId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders', orderId] })
+      alert('Demande envoyée à la logistique !')
     },
   })
 
@@ -303,6 +311,17 @@ export function OrderDetailPage() {
                       Signaler incident
                     </Button>
                   </Link>
+                  {!lot.materials.every((mat) => mat.available >= mat.quantity) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl font-medium shadow-lg"
+                      onClick={() => requestMats.mutate(lot.id)}
+                      disabled={requestMats.isPending || currentStatus === 'done'}
+                    >
+                      {requestMats.isPending ? 'En cours...' : 'Demander les matières'}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     className="rounded-xl font-medium shadow-lg"

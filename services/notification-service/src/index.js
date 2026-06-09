@@ -11,7 +11,7 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-app.use("/notifications", router);
+app.use("/api/notifications", router);
 
 const server = http.createServer(app);
 

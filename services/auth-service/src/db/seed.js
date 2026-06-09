@@ -18,10 +18,12 @@ async function seed() {
         email: adminEmail,
         passwordHash: 'Admin123!',
         role: 'admin',
+        siteName: 'SIÈGE SOCIAL',
       })
       console.log('Admin user seeded (admin@aeronexis.com / Admin123!).')
     } else {
-      console.log('Admin user already exists.')
+      await existingAdmin.update({ siteName: 'SIÈGE SOCIAL' })
+      console.log('Admin user already exists. siteName updated.')
     }
 
     const operatorEmail = 'operator@aeronexis.com'
@@ -34,10 +36,12 @@ async function seed() {
         email: operatorEmail,
         passwordHash: 'Operateur123!',
         role: 'operator',
+        siteName: 'ATELIER PRINCIPAL',
       })
       console.log('Operator user seeded (operator@aeronexis.com / Operateur123!).')
     } else {
-      console.log('Operator user already exists.')
+      await existingOperator.update({ siteName: 'ATELIER PRINCIPAL' })
+      console.log('Operator user already exists. siteName updated.')
     }
 
     const logisticsEmail = 'logistics@aeronexis.com'
@@ -50,10 +54,12 @@ async function seed() {
         email: logisticsEmail,
         passwordHash: 'Logistique123!',
         role: 'logistics',
+        siteName: 'SITE ALPHA',
       })
       console.log('Logistics user seeded (logistics@aeronexis.com / Logistique123!).')
     } else {
-      console.log('Logistics user already exists.')
+      await existingLogistics.update({ siteName: 'SITE ALPHA' })
+      console.log('Logistics user already exists. siteName updated.')
     }
 
     console.log('Auth data seeding complete.')

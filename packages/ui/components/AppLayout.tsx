@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '../utils/cn';
+import { ToastProvider } from './ToastProvider';
 
 interface AppLayoutProps {
   sidebar?: React.ReactNode;
@@ -41,7 +42,7 @@ export function AppLayout({
       {/* Main Content Area */}
       <div className={cn("flex-1 flex flex-col h-screen overflow-hidden z-10 relative", sidebar ? "ml-64" : "", className)}>
         {header && (
-          <div className="shrink-0">
+          <div className="shrink-0 relative z-50">
             {header}
           </div>
         )}
@@ -51,6 +52,7 @@ export function AppLayout({
           </div>
         </main>
       </div>
+      <ToastProvider />
     </div>
   );
 }

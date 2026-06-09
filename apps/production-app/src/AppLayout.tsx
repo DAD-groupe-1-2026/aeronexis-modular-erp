@@ -1,10 +1,8 @@
 import { useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
-import { AppLayout as SharedAppLayout, Sidebar, TopHeader } from '@aeronexis-dynamics/ui'
+import { AppLayout as SharedAppLayout, Sidebar, TopHeader, useNotifications } from '@aeronexis-dynamics/ui'
 import { useAuthStore, logoutAndRedirect } from '@aeronexis-dynamics/auth'
-// @ts-ignore
-import { useNotifications } from './hooks/useNotifications'
 import {
   LayoutDashboard,
   ClipboardList,
@@ -24,14 +22,14 @@ export function AppLayout() {
   const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
   const { user } = useAuthStore();
-  const notifications = useNotifications();
+  const notifications = useNotifications('production');
 
   const header = (
     <TopHeader 
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       searchPlaceholder="Rechercher..."
-      siteName="ATELIER PRINCIPAL"
+      siteName={user?.siteName || "ATELIER PRINCIPAL"}
       notifications={notifications as any}
       unreadCount={notifications.length}
       showNotifications={showNotifications}

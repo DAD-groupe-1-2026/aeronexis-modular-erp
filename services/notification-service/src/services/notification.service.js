@@ -1,31 +1,45 @@
 // Logique métier pure
 
 export function buildNotification(event) {
-  switch (event.type) {
+  const type = event.eventType || event.type;
+  const data = event.data || event;
+
+  switch (type) {
     case "STOCK_LOW":
       return {
-        userId: event.userId,
+        userId: data.userId || 'system',
         type: "warning",
         title: "Stock faible",
-        message: `${event.productName} est sous le seuil critique`,
+        message: `${data.productName} est sous le seuil critique`,
         createdAt: new Date()
       }
 
     case "ORDER_CREATED":
       return {
-        userId: event.userId,
+        userId: data.userId || 'system',
         type: "info",
         title: "Nouvelle commande",
-        message: `Commande #${event.orderId} créée`,
+        message: `Commande #${data.orderId} créée`,
         createdAt: new Date()
       }
 
     case "PRODUCTION_FINISHED":
+    case "LOT_COMPLETED":
       return {
-        userId: event.userId,
+        userId: data.userId || 'system',
         type: "success",
         title: "Production terminée",
-        message: `Lot ${event.lotId} terminé`,
+        message: `Lot ${data.lotId || data.reference} terminé`,
+        createdAt: new Date()
+      }
+
+    case "MATERIAL_REQUESTED":
+      return {
+        targetApp: 'logistics',
+        userId: 'system', 
+        type: "info",
+        title: "Demande de Matières",
+        message: `${data.requestedBy || 'Utilisateur inconnu'} (Site: ${data.siteName || 'Site Inconnu'}) réclame ${data.quantity} unité(s) de la matière ${data.materialCode || data.reference}`,
         createdAt: new Date()
       }
 

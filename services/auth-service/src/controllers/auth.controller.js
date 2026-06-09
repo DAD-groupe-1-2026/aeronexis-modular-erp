@@ -37,7 +37,14 @@ async function login(req, res) {
     }
 
     const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
+      { 
+        userId: user.id, 
+        email: user.email, 
+        role: user.role, 
+        siteName: user.siteName,
+        firstName: user.firstName,
+        lastName: user.lastName 
+      },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '1h' },
     )
@@ -52,6 +59,7 @@ async function login(req, res) {
           lastName: user.lastName,
           email: user.email,
           role: user.role,
+          siteName: user.siteName,
         },
       },
     })
@@ -102,6 +110,7 @@ async function register(req, res) {
           lastName: user.lastName,
           email: user.email,
           role: user.role,
+          siteName: user.siteName,
         },
       },
     })
@@ -137,6 +146,7 @@ async function getUserById(req, res) {
         lastName: user.lastName,
         email: user.email,
         role: user.role,
+        siteName: user.siteName,
       },
     })
   } catch (err) {

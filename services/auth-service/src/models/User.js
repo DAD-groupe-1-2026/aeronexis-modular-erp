@@ -35,6 +35,11 @@ const User = sequelize.define(
       allowNull: false,
       defaultValue: 'operator',
     },
+    siteName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: 'ATELIER PRINCIPAL',
+    },
   },
   {
     tableName: 'users',

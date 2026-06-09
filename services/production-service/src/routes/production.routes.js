@@ -1,6 +1,6 @@
 const { Router } = require('express')
 const { authenticate } = require('../middlewares/authenticate')
-const { list, getOne, create, update, updateLot } = require('../controllers/workOrders.controller')
+const { list, getOne, create, update, updateLot, requestMaterials } = require('../controllers/workOrders.controller')
 const incidentsCtrl = require('../controllers/incidents.controller')
 
 const router = Router()
@@ -15,6 +15,7 @@ router.patch('/orders/:id', update)
 
 // Lots
 router.patch('/lots/:id', updateLot)
+router.post('/lots/:id/request-materials', requestMaterials)
 
 // Incidents
 router.get('/incidents', incidentsCtrl.list)

@@ -19,11 +19,20 @@ app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'logistics-s
 
 sequelize
   .authenticate()
-  .then(() => {
+  .then(async () => {
     console.log('Database connected.')
-    return app.listen(PORT, () =>
-      console.log(`logistics-service running on port ${PORT}`),
-    )
+    const { connectRabbitMQ } = require('@aeronexis/event-bus')
+    await connectRabbitMQ()
+    return app.listen(PORT, async () => {
+      console.log(`[LOGISTICS] Service listening on port ${PORT}`)
+      
+      try {
+        const { setupConsumers } = require('./consumer')
+        await setupConsumers()
+      } catch (err) {
+        console.error('Failed to setup consumers:', err)
+      }
+    })
   })
   .catch((err) => {
     console.error('Failed to connect to database:', err)

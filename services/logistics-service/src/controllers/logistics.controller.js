@@ -77,9 +77,73 @@ async function createReservation(req, res) {
 
 async function updateReservation(req, res) {
   try {
-    const reservation = await Reservation.findByPk(req.params.id)
+    const reservation = await Reservation.findByPk(req.params.id, {
+      include: [{ model: StockItem, as: 'stockItem' }]
+    })
     if (!reservation) return fail(res, 'NOT_FOUND', 'Reservation not found', 404)
+    
+    const oldStatus = reservation.status
     await reservation.update(req.body)
+    
+    // Si la réservation passe de "pending" (ou autre) à "confirmed"
+    if (oldStatus !== 'confirmed' && reservation.status === 'confirmed') {
+      const stockItem = reservation.stockItem
+      if (stockItem) {
+        // on réserve officiellement (si ce n'était pas déjà fait) et on peut déduire de l'available
+        // Mais dans notre logique ERP, 'pending' ne touchait pas aux qtés. 'confirmed' signifie que c'est réservé
+        // Donc on décrémente quantityAvailable et on incrémente quantityReserved
+        await stockItem.update({
+          quantityAvailable: stockItem.quantityAvailable - reservation.quantity,
+          quantityReserved: stockItem.quantityReserved + reservation.quantity
+        })
+        
+        // Publier l'événement pour la production
+        const { publishEvent, EVENTS } = require('@aeronexis/event-bus')
+        await publishEvent(EVENTS.RESERVATION_UPDATED, 'logistics-service', {
+          reservationId: reservation.id,
+          workOrderId: reservation.workOrderId,
+          materialCode: stockItem.materialCode,
+          quantity: reservation.quantity,
+          status: reservation.status
+        })
+      }
+    }
+    
+    // Si la réservation est annulée
+    if (oldStatus === 'confirmed' && reservation.status === 'cancelled') {
+      const stockItem = reservation.stockItem
+      if (stockItem) {
+        // On restitue le stock disponible et on réduit le réservé
+        await stockItem.update({
+          quantityAvailable: stockItem.quantityAvailable + reservation.quantity,
+          quantityReserved: stockItem.quantityReserved - reservation.quantity
+        })
+        
+        // Publier l'événement
+        const { publishEvent, EVENTS } = require('@aeronexis/event-bus')
+        await publishEvent(EVENTS.RESERVATION_UPDATED, 'logistics-service', {
+          reservationId: reservation.id,
+          workOrderId: reservation.workOrderId,
+          materialCode: stockItem.materialCode,
+          quantity: reservation.quantity,
+          status: reservation.status
+        })
+      }
+    } else if (oldStatus === 'pending' && reservation.status === 'cancelled') {
+      // Annulation d'une attente, on ne touche pas au stock
+      const stockItem = reservation.stockItem
+      if (stockItem) {
+        const { publishEvent, EVENTS } = require('@aeronexis/event-bus')
+        await publishEvent(EVENTS.RESERVATION_UPDATED, 'logistics-service', {
+          reservationId: reservation.id,
+          workOrderId: reservation.workOrderId,
+          materialCode: stockItem.materialCode,
+          quantity: reservation.quantity,
+          status: reservation.status
+        })
+      }
+    }
+    
     ok(res, reservation)
   } catch (err) {
     fail(res, 'SERVER_ERROR', err.message)

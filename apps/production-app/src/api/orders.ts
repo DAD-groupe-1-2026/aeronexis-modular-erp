@@ -24,3 +24,7 @@ export async function updateLotStatus(
   })
   if (res.status === 'failure') throw new Error(res.error?.message)
 }
+export async function requestMaterials(lotId: string): Promise<void> {
+  const res = await apiClient.post<void>(`/api/production/lots/${lotId}/request-materials`, {})
+  if (res.status === 'failure') throw new Error(res.error?.message)
+}

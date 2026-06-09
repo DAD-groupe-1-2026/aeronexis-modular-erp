@@ -3,8 +3,8 @@ import { useOutletContext } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { DataTable, Badge, Button } from '@aeronexis-dynamics/ui';
 import { Lock } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { getReservations } from '../api/reservations';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getReservations, updateReservationStatus } from '../api/reservations';
 import { formatDateTime, toNumber } from '../lib/utils';
 import { createColumnHelper } from '@tanstack/react-table';
 import type { LogisticsReservation } from '@aeronexis-dynamics/shared-types';
@@ -24,8 +24,31 @@ const pageTransition = {
 const columnHelper = createColumnHelper<LogisticsReservation>();
 
 export default function ReservationsView() {
+  const queryClient = useQueryClient();
   const { data: reservations = [], isLoading: loading } = useQuery({ queryKey: ['reservations'], queryFn: getReservations });
   const { searchQuery = '' } = useOutletContext<{ searchQuery?: string }>() || {};
+
+  const updateStatus = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) => updateReservationStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['stocks'] }); // Invalidate stocks too
+    }
+  });
+
+  // Rafraîchissement automatique en temps réel lors d'une nouvelle demande
+  React.useEffect(() => {
+    import('socket.io-client').then(({ io }) => {
+      const socket = io();
+      socket.on("notification", (data) => {
+        if (data.targetApp === 'logistics' || data.targetApp === 'global') {
+          // Invalider le cache pour forcer un re-fetch dynamique des réservations
+          queryClient.invalidateQueries({ queryKey: ['reservations'] });
+        }
+      });
+      return () => socket.disconnect();
+    });
+  }, [queryClient]);
 
   const filteredReservations = useMemo(() => reservations.filter(res =>
     res?.workOrderId?.toLowerCase().includes(searchQuery?.toLowerCase() || '') ||
@@ -63,7 +86,7 @@ export default function ReservationsView() {
       cell: info => {
         const status = info.getValue();
         if (status === 'pending') return <Badge variant="warning">En attente</Badge>;
-        if (status === 'confirmed') return <Badge variant="warning">Confirmée</Badge>;
+        if (status === 'confirmed') return <Badge variant="success">Réservée</Badge>;
         if (status === 'fulfilled') return <Badge variant="success">Honorée</Badge>;
         if (status === 'cancelled') return <Badge variant="default">Annulée</Badge>;
         return null;
@@ -80,8 +103,27 @@ export default function ReservationsView() {
         const res = info.row.original;
         if (res.status === 'pending' || res.status === 'confirmed') {
           return (
-            <div className="text-right">
-              <Button variant="ghost" size="sm" className="h-8 text-indigo-400 hover:text-indigo-300 hover:bg-white/10 rounded-lg" onClick={() => alert('Gestion de la réservation ' + res.workOrderId)}>Gérer</Button>
+            <div className="text-right flex justify-end gap-2">
+              {res.status === 'pending' && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 text-indigo-400 hover:text-indigo-300 hover:bg-white/10 rounded-lg" 
+                  onClick={() => updateStatus.mutate({ id: res.id, status: 'confirmed' })}
+                  disabled={updateStatus.isPending}
+                >
+                  {updateStatus.isPending ? 'En cours...' : 'Réserver'}
+                </Button>
+              )}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg" 
+                onClick={() => updateStatus.mutate({ id: res.id, status: 'cancelled' })}
+                disabled={updateStatus.isPending}
+              >
+                Annuler
+              </Button>
             </div>
           );
         }

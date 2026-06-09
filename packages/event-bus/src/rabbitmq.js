@@ -12,6 +12,13 @@ async function connectRabbitMQ() {
     channel =
       await connection.createChannel();
 
+    // Assert the new exchange
+    await channel.assertExchange('erp_events', 'topic', { durable: true });
+    
+    // Ensure old queues exist so they don't crash
+    await channel.assertQueue('audit_events', { durable: true });
+    await channel.assertQueue('events', { durable: true });
+
     console.log(
       "[EVENT BUS] RabbitMQ connected"
     );

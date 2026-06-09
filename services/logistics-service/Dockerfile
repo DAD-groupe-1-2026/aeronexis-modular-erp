@@ -2,10 +2,13 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY services/logistics-service/package.json ./
-RUN npm install --production
+COPY package*.json ./
+COPY packages ./packages
+COPY services/logistics-service ./services/logistics-service
 
-COPY services/logistics-service/src ./src
+RUN npm install --omit=dev
+
+WORKDIR /app/services/logistics-service
 
 EXPOSE 3003
 

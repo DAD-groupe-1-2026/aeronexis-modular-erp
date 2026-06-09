@@ -23,6 +23,7 @@ export interface User {
   lastName: string
   email: string
   role: Role
+  siteName?: string
 }
 
 // ─── Production domain ───────────────────────────────────────────────────────
