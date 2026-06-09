@@ -136,7 +136,8 @@ Incident.afterCreate(async (incident) => {
     {
       id: incident.id,
       severity: incident.severity,
-      resolved: incident.resolved
+      resolved: incident.resolved,
+      lotId: incident.lotId
     }
   )
 
@@ -150,7 +151,8 @@ Incident.afterUpdate(async (incident) => {
       EVENTS.INCIDENT_RESOLVED,
       'production-service',
       {
-        id: incident.id
+        id: incident.id,
+        lotId: incident.lotId
       }
     )
 
@@ -169,7 +171,8 @@ Lot.afterCreate(async (lot) => {
     {
       id: lot.id,
       reference: lot.reference,
-      product: lot.product
+      product: lot.product,
+      workOrderId: lot.workOrderId
     }
   )
 
@@ -185,7 +188,8 @@ Lot.afterUpdate(async (lot) => {
       reference: lot.reference,
       status: lot.status,
       completionPercent:
-        lot.completionPercent
+        lot.completionPercent,
+      workOrderId: lot.workOrderId
     }
   )
 
@@ -204,7 +208,8 @@ Material.afterCreate(
       {
         id: material.id,
         name: material.name,
-        quantity: material.quantity
+        quantity: material.quantity,
+        lotId: material.lotId
       }
     )
 
@@ -221,7 +226,8 @@ Material.afterUpdate(
         id: material.id,
         name: material.name,
         quantity: material.quantity,
-        available: material.available
+        available: material.available,
+        lotId: material.lotId
       }
     )
 

@@ -152,6 +152,23 @@ services:
     networks:
       - aeronexis-network
 
+  traceability-service:
+    build:
+      context: ../../
+      dockerfile: services/traceability-service/Dockerfile
+    container_name: erp-traceability-service
+    ports:
+      - "3005:3005"
+    environment:
+      MONGO_URI: mongodb://mongodb:27017/aeronexis_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      PORT: 3005
+    depends_on:
+      - mongodb
+      - rabbitmq
+    networks:
+      - aeronexis-network
+
 volumes:
   pgdata:
   mongodata:

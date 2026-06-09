@@ -181,6 +181,7 @@ export function OrderDetailPage() {
         {workOrder.lots.map((lot, index) => {
           const currentStatus = getLotStatus(lot.id, lot.status)
           const currentProgress = getLotProgress(lot.id, lot.completionPercent)
+          const hasInsufficientMaterials = lot.materials.some(mat => mat.available < mat.quantity)
 
           return (
             <motion.div 
@@ -208,7 +209,7 @@ export function OrderDetailPage() {
                   >
                     <option value="planned" className="bg-slate-900">Planifié</option>
                     <option value="in_progress" className="bg-slate-900">En cours</option>
-                    <option value="done" className="bg-slate-900">Terminé</option>
+                    <option value="done" className="bg-slate-900" disabled={hasInsufficientMaterials}>Terminé</option>
                   </Select>
                   <Badge variant={statusVariant[currentStatus]} className="shadow-sm">{statusLabel[currentStatus]}</Badge>
                 </div>
@@ -235,6 +236,12 @@ export function OrderDetailPage() {
                     onChange={(e) =>
                       setLotProgress((prev) => ({ ...prev, [lot.id]: Number(e.target.value) }))
                     }
+                    onMouseUp={(e) => {
+                      updateLot.mutate({ lotId: lot.id, status: currentStatus, completionPercent: Number(e.currentTarget.value) })
+                    }}
+                    onTouchEnd={(e) => {
+                      updateLot.mutate({ lotId: lot.id, status: currentStatus, completionPercent: Number(e.currentTarget.value) })
+                    }}
                     className="w-full accent-indigo-500 cursor-pointer mt-2"
                   />
                 </div>
@@ -322,19 +329,24 @@ export function OrderDetailPage() {
                       {requestMats.isPending ? 'En cours...' : 'Demander les matières'}
                     </Button>
                   )}
-                  <Button
-                    size="sm"
-                    className="rounded-xl font-medium shadow-lg"
-                    disabled={currentStatus === 'done'}
-                    onClick={() => {
-                      setLotStatuses((prev) => ({ ...prev, [lot.id]: 'done' }))
-                      setLotProgress((prev) => ({ ...prev, [lot.id]: 100 }))
-                      updateLot.mutate({ lotId: lot.id, status: 'done', completionPercent: 100 })
-                    }}
+                  <div 
+                    title={hasInsufficientMaterials ? "Impossible de marquer terminé car les matériaux sont insuffisants" : undefined}
+                    className={hasInsufficientMaterials ? "cursor-not-allowed inline-block" : "inline-block"}
                   >
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                    Marquer terminé
-                  </Button>
+                    <Button
+                      size="sm"
+                      className={`rounded-xl font-medium shadow-lg w-full ${hasInsufficientMaterials ? 'pointer-events-none' : ''}`}
+                      disabled={currentStatus === 'done' || hasInsufficientMaterials}
+                      onClick={() => {
+                        setLotStatuses((prev) => ({ ...prev, [lot.id]: 'done' }))
+                        setLotProgress((prev) => ({ ...prev, [lot.id]: 100 }))
+                        updateLot.mutate({ lotId: lot.id, status: 'done', completionPercent: 100 })
+                      }}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Marquer terminé
+                    </Button>
+                  </div>
                 </div>
               </div>
             </motion.div>
