@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import {
   CheckCircle2,
   Clock,
@@ -7,9 +8,8 @@ import {
   ArrowRight,
   Flame,
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card'
-import { Badge } from '@/components/Badge'
-import { Button } from '@/components/Button'
+import { Badge } from '@aeronexis-dynamics/ui'
+import { Button } from '@aeronexis-dynamics/ui'
 import { Progress } from '@/components/Progress'
 import { IncidentBadge } from '@/components/IncidentBadge'
 import { useQuery } from '@tanstack/react-query'
@@ -17,9 +17,68 @@ import { QueryErrorAlert } from '@aeronexis-dynamics/ui'
 import { getOrders } from '@/api/orders'
 import { getIncidents } from '@/api/incidents'
 
+const pageVariants = {
+  initial: { opacity: 0, y: 15 },
+  in: { opacity: 1, y: 0 },
+  out: { opacity: 0, y: -15 }
+}
+
+const pageTransition = {
+  type: "tween" as const,
+  ease: "anticipate" as const,
+  duration: 0.4
+}
+
+function StatCard({
+  icon: Icon,
+  value,
+  label,
+  iconClass,
+  iconBg,
+  delay = 0
+}: {
+  icon: React.ElementType
+  value: number
+  label: string
+  iconClass: string
+  iconBg: string
+  delay?: number
+}) {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay, duration: 0.4 }}
+      whileHover={{ y: -4, scale: 1.02 }}
+      className="rounded-2xl border border-white/10 bg-[#0a0a0c]/80 backdrop-blur-2xl px-5 py-5 flex items-center gap-4 shadow-xl"
+    >
+      <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${iconBg} border border-white/5`}>
+        <Icon className={`h-6 w-6 ${iconClass}`} />
+      </div>
+      <div>
+        <p className="text-3xl font-bold text-white leading-none tracking-tight">{value}</p>
+        <p className="text-sm text-slate-400 mt-1.5">{label}</p>
+      </div>
+    </motion.div>
+  )
+}
+
 export function DashboardPage() {
-  const { data: orders = [], isLoading: ordersLoading, isError: ordersError, error: ordersErr, refetch: refetchOrders } = useQuery({ queryKey: ['orders'], queryFn: getOrders })
-  const { data: incidents = [], isLoading: incidentsLoading, isError: incidentsError, error: incidentsErr, refetch: refetchIncidents } = useQuery({ queryKey: ['incidents'], queryFn: getIncidents })
+  const {
+    data: orders = [],
+    isLoading: ordersLoading,
+    isError: ordersError,
+    error: ordersErr,
+    refetch: refetchOrders,
+  } = useQuery({ queryKey: ['orders'], queryFn: getOrders })
+
+  const {
+    data: incidents = [],
+    isLoading: incidentsLoading,
+    isError: incidentsError,
+    error: incidentsErr,
+    refetch: refetchIncidents,
+  } = useQuery({ queryKey: ['incidents'], queryFn: getIncidents })
 
   const allLots = orders.flatMap((wo) => wo.lots)
   const stats = {
@@ -33,7 +92,10 @@ export function DashboardPage() {
 
   if (ordersLoading || incidentsLoading) {
     return (
-      <div className="p-8 text-sm text-muted-foreground">Chargement du tableau de bord...</div>
+      <div className="p-8 text-sm text-slate-400 flex items-center gap-3">
+        <div className="h-4 w-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        Chargement du tableau de bord...
+      </div>
     )
   }
 
@@ -62,10 +124,18 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <motion.div 
+      initial="initial"
+      animate="in"
+      exit="out"
+      variants={pageVariants}
+      transition={pageTransition}
+      className="p-6 space-y-8"
+    >
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Tableau de bord</h1>
-        <p className="text-muted-foreground text-sm mt-1">
+        <h1 className="text-2xl font-bold text-white tracking-tight">Tableau de bord</h1>
+        <p className="text-slate-400 text-sm mt-1">
           Vue d'ensemble de la journée –{' '}
           {new Date().toLocaleDateString('fr-FR', {
             weekday: 'long',
@@ -76,130 +146,134 @@ export function DashboardPage() {
         </p>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
-                <ClipboardList className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-xs text-muted-foreground">Lots au total</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
-                <Clock className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.inProgress}</p>
-                <p className="text-xs text-muted-foreground">En cours</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.done}</p>
-                <p className="text-xs text-muted-foreground">Terminés</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50">
-                <AlertTriangle className="h-5 w-5 text-red-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.openIncidents}</p>
-                <p className="text-xs text-muted-foreground">Incidents ouverts</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          icon={ClipboardList}
+          value={stats.total}
+          label="Lots au total"
+          iconClass="text-blue-400"
+          iconBg="bg-blue-500/20"
+          delay={0.1}
+        />
+        <StatCard
+          icon={Clock}
+          value={stats.inProgress}
+          label="En cours"
+          iconClass="text-amber-400"
+          iconBg="bg-amber-500/20"
+          delay={0.2}
+        />
+        <StatCard
+          icon={CheckCircle2}
+          value={stats.done}
+          label="Terminés"
+          iconClass="text-emerald-400"
+          iconBg="bg-emerald-500/20"
+          delay={0.3}
+        />
+        <StatCard
+          icon={AlertTriangle}
+          value={stats.openIncidents}
+          label="Incidents ouverts"
+          iconClass="text-red-400"
+          iconBg="bg-red-500/20"
+          delay={0.4}
+        />
       </div>
 
+      {/* Main panels */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Flame className="h-4 w-4 text-red-500" />
-                Ordres urgents en cours
-              </CardTitle>
-              <Link to="/orders">
-                <Button variant="ghost" size="sm" className="gap-1 text-xs">
-                  Voir tout <ArrowRight className="h-3 w-3" />
-                </Button>
-              </Link>
+        {/* Urgent orders */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+          className="rounded-2xl border border-white/10 bg-[#0a0a0c]/80 backdrop-blur-2xl shadow-2xl overflow-hidden flex flex-col"
+        >
+          <div className="flex items-center justify-between px-6 py-4 bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-2.5 text-sm font-semibold text-white">
+              <div className="p-1.5 bg-red-500/20 rounded-md">
+                <Flame className="h-4 w-4 text-red-400" />
+              </div>
+              Ordres urgents en cours
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            <Link to="/orders">
+              <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-8 text-slate-400 hover:text-white hover:bg-white/10 transition-colors">
+                Voir tout <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </Link>
+          </div>
+          <div className="p-6 space-y-4 flex-1">
             {urgentOrders.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">Aucun ordre urgent</p>
+              <p className="text-sm text-slate-500 text-center py-8">Aucun ordre urgent</p>
             )}
             {urgentOrders.map((wo) => {
               const totalLots = wo.lots.length
               const doneLots = wo.lots.filter((l) => l.status === 'done').length
               const avgProgress =
-                wo.lots.reduce((sum, l) => sum + l.completionPercent, 0) / totalLots
+                wo.lots.reduce((sum, l) => sum + l.completionPercent, 0) / (totalLots || 1)
               return (
                 <Link key={wo.id} to={`/orders/${wo.id}`} className="block">
-                  <div className="rounded-lg border border-border p-4 hover:bg-accent/50 transition-colors space-y-2">
+                  <motion.div 
+                    whileHover={{ scale: 1.01, backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+                    transition={{ duration: 0.2 }}
+                    className="rounded-xl border border-white/5 bg-white/5 p-4 space-y-3"
+                  >
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">{wo.reference}</span>
-                      <Badge variant="destructive" className="text-[10px]">Urgent</Badge>
+                      <span className="font-semibold text-sm text-white">{wo.reference}</span>
+                      <Badge variant="error" className="text-[10px] px-2 py-0.5 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                        Urgent
+                      </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">{wo.clientName}</p>
-                    <div className="space-y-1">
+                    <p className="text-xs text-slate-400">{wo.clientName}</p>
+                    <div className="space-y-2">
                       <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">{doneLots}/{totalLots} lots</span>
-                        <span className="font-medium">{Math.round(avgProgress)}%</span>
+                        <span className="text-slate-400">{doneLots}/{totalLots} lots</span>
+                        <span className="font-medium text-white">{Math.round(avgProgress)}%</span>
                       </div>
-                      <Progress value={avgProgress} />
+                      <Progress value={avgProgress} className="bg-white/10" indicatorClassName="bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-slate-500 pt-1">
                       Échéance : {new Date(wo.dueDate).toLocaleDateString('fr-FR')}
                     </p>
-                  </div>
+                  </motion.div>
                 </Link>
               )
             })}
-          </CardContent>
-        </Card>
+          </div>
+        </motion.div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
-              Incidents non résolus
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        {/* Active incidents */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+          className="rounded-2xl border border-white/10 bg-[#0a0a0c]/80 backdrop-blur-2xl shadow-2xl overflow-hidden flex flex-col"
+        >
+          <div className="flex items-center gap-2.5 px-6 py-4 bg-white/5 border-b border-white/10">
+            <div className="p-1.5 bg-amber-500/20 rounded-md">
+              <AlertTriangle className="h-4 w-4 text-amber-400" />
+            </div>
+            <span className="text-sm font-semibold text-white">Incidents non résolus</span>
+          </div>
+          <div className="p-6 space-y-4 flex-1">
             {activeIncidents.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">Aucun incident ouvert</p>
+              <p className="text-sm text-slate-500 text-center py-8">Aucun incident ouvert</p>
             )}
             {activeIncidents.map((inc) => (
-              <Link key={inc.id} to={`/incidents/${inc.id}`} className="block">
-                <div className="rounded-lg border border-border p-4 space-y-1.5 hover:bg-accent/50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">{inc.lotReference}</span>
+              <Link key={inc.id} to={`/incident/new?lot=${inc.lotReference}`} className="block">
+                <motion.div 
+                  whileHover={{ scale: 1.01, backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+                  transition={{ duration: 0.2 }}
+                  className="rounded-xl border border-white/5 bg-white/5 p-4 space-y-2"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold text-sm text-white">{inc.lotReference}</span>
                     <IncidentBadge severity={inc.severity} />
                   </div>
-                  <p className="text-xs text-muted-foreground line-clamp-2">{inc.description}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">{inc.description}</p>
+                  <p className="text-xs text-slate-500 pt-1">
                     {new Date(inc.reportedAt).toLocaleDateString('fr-FR', {
                       day: 'numeric',
                       month: 'long',
@@ -207,12 +281,12 @@ export function DashboardPage() {
                       minute: '2-digit',
                     })}
                   </p>
-                </div>
+                </motion.div>
               </Link>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   )
 }

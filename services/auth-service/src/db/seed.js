@@ -40,6 +40,22 @@ async function seed() {
       console.log('Operator user already exists.')
     }
 
+    const logisticsEmail = 'logistics@aeronexis.com'
+    const existingLogistics = await User.findOne({ where: { email: logisticsEmail } })
+
+    if (!existingLogistics) {
+      await User.create({
+        firstName: 'Sophie',
+        lastName: 'Logistique',
+        email: logisticsEmail,
+        passwordHash: 'Logistique123!',
+        role: 'logistics',
+      })
+      console.log('Logistics user seeded (logistics@aeronexis.com / Logistique123!).')
+    } else {
+      console.log('Logistics user already exists.')
+    }
+
     console.log('Auth data seeding complete.')
     process.exit(0)
   } catch (err) {

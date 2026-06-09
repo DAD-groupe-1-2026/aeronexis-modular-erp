@@ -11,16 +11,22 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@aeronexis-dynamics/api-client": "*",
+    "@aeronexis-dynamics/auth": "*",
+    "@aeronexis-dynamics/shared-types": "*",
+    "@aeronexis-dynamics/ui": "*",
     "@tailwindcss/vite": "^4.1.14",
     "@tanstack/react-query": "^5.101.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
+    "framer-motion": "^12.40.0",
     "lucide-react": "^0.546.0",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-router-dom": "^7.17.0",
     "recharts": "^3.8.1",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "zustand": "^5.0.2"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

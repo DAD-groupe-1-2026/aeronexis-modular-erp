@@ -1,19 +1,12 @@
 {
   "name": "@aeronexis-dynamics/auth",
   "version": "1.0.0",
-  "private": true,
-  "description": "Shared authentication module (LoginPage, useAuthStore, ProtectedRoute) - AERONEXIS Dynamics",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
-  "scripts": {
-    "build": "tsc --declaration --emitDeclarationOnly"
-  },
-  "peerDependencies": {
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "react-router-dom": "^6.0.0",
-    "zustand": "^5.0.0",
-    "@aeronexis-dynamics/api-client": "1.0.0",
-    "@aeronexis-dynamics/shared-types": "1.0.0"
+  "main": "src/index.tsx",
+  "types": "src/index.tsx",
+  "dependencies": {
+    "@aeronexis-dynamics/shared-types": "*",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "zustand": "^5.0.2"
   }
 }

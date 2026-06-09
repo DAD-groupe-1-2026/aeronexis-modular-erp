@@ -9,6 +9,7 @@ Ce document décrit l'architecture SOA/Microservices à 4 couches du projet. Cha
 ```mermaid
 flowchart TD
     subgraph C1 [Couche 1 — Applications métiers]
+        PORTAL[portal-app\nLogin + redirection]
         PA[production-app\nOpérateurs]
         LA[logistics-app\nLogistique]
         SA[sales-app\nCommerciaux]
@@ -66,6 +67,7 @@ flowchart TD
 ```
 aeronexis-modular-erp/
 ├── apps/                        # Couche 1 : Applications métiers
+│   ├── portal-app/              # Façade UI — login centralisé, AppRedirector par rôle
 │   ├── production-app/
 │   ├── logistics-app/
 │   ├── sales-app/
@@ -210,7 +212,7 @@ Modules partagés entre toutes les applications.
 
 | Package | Rôle dans la couche 2 |
 |---|---|
-| `auth` | Sécurisation des flux locaux : `LoginPage`, `ProtectedRoute`, `useAuthStore` (JWT), `RoleRedirector`, `isAuthBypassed` (bypass dev) |
+| `auth` | Sécurisation des flux locaux : `LoginPage`, `ProtectedRoute`, `RoleRoute`, `AppRedirector`, `useAuthStore` (JWT), `logoutAndRedirect`, `isAuthBypassed` (bypass dev) |
 | `api-client` | Normalisation des messages `{ status, data, error }` + injection JWT + gestion des erreurs réseau |
 | `shared-types` | Contrats TypeScript inter-couches : entités métier (`WorkOrder`, `Lot`, `User`...), `ApiResponse<T>`, `ApiError`, `ApiStatus` |
 | `ui` | Composants React partagés entre les apps : `QueryErrorAlert` (affichage erreurs API/React Query), `getErrorMessage`, utilitaire `cn` |
@@ -237,14 +239,48 @@ Le `api-client` (couche 2) retourne systématiquement ce format, que l'appel ré
 L'API Gateway est le **point d'entrée unique** à port 80, implémenté avec **NGINX**.
 Il n'exécute aucune logique applicative : il route, valide les JWT via `auth_request`, et transmet.
 
-```
 services/api-gateway/
-├── nginx.conf    # Configuration complète : upstreams, routes, auth_request, erreurs normalisées
-├── Dockerfile    # Image nginx:1.25-alpine
-└── .env          # Documentation des hosts/ports des microservices
+├── nginx.conf       # Configuration unique : upstreams API + serve des assets statiques (/ , /production/ , /logistics/)
+├── nginx.dev.conf   # (Optionnel) Développement avec hot-reloading : proxy Vite (4000, 4001, 4002) + routes API
+├── Dockerfile       # Multi-stage : build front-end + image NGINX
+└── .env             # Documentation des hosts/ports des microservices
 ```
 
-### Routage (nginx.conf)
+### Double façade
+
+| Façade | Rôle | Chemins |
+|---|---|---|
+| **API** | Reverse proxy + JWT (`auth_request`) | `/auth/*`, `/api/*` |
+| **UI** | Portail + apps métier sous un même domaine | `/` (portail), `/production/`, `/logistics/` |
+
+```mermaid
+flowchart LR
+    browser[Navigateur]
+    nginx[NGINX :80]
+    portal[portal-app]
+    prod[production-app]
+    log[logistics-app]
+    auth[auth-service]
+    api[Microservices API]
+
+    browser --> nginx
+    nginx -->|"/"| portal
+    nginx -->|"/production/"| prod
+    nginx -->|"/logistics/"| log
+    nginx -->|"/auth/*"| auth
+    nginx -->|"/api/*"| api
+    portal -->|POST /auth/login| auth
+    prod --> api
+    log --> api
+```
+
+**Flux login portail → app métier :**
+1. Utilisateur ouvre `GET /` → portail (`AppRedirector` ou redirect `/login`)
+2. Login via `POST /auth/login` → JWT stocké (`localStorage`, clé partagée `aeronexis-auth`)
+3. `AppRedirector` redirige par rôle (`window.location.assign`) vers l'URL métier configurée (`VITE_APP_URL_*`)
+4. Apps métier : `ProtectedRoute redirectToPortal` si pas de token ; `RoleRoute` sur logistics (`logistics`, `admin`, `director`)
+
+### Routage API (nginx.conf)
 
 | Location | Accès | Service cible |
 |---|---|---|
@@ -256,6 +292,9 @@ services/api-gateway/
 | `/api/sales/*` | JWT requis | `sales-service:3004` |
 | `/api/traceability/*` | JWT requis | `traceability-service:3005` |
 | `/api/notifications/*` | JWT requis | `notification-service:3006` |
+| `/` | Public (portail) | Assets `portal-app` ou proxy Vite `:5170` |
+| `/production/*` | Front-end métier | Assets `production-app` ou proxy Vite `:5173` |
+| `/logistics/*` | Front-end métier | Assets `logistics-app` ou proxy Vite `:5174` |
 
 ### Mécanisme d'authentification
 
@@ -505,41 +544,48 @@ if (isError) {
 
 ### G. Configuration de développement
 
-Les applications frontales peuvent être configurées pour fonctionner en mode isolé sans Docker :
+Les variables d'environnement sont centralisées à la racine du monorepo (`/.env.development` et `/.env.production`) pour garantir la cohérence réseau.
 
-**Fichier :** `apps/<app>/.env.development`
+**Fichier :** `/.env.development` (à la racine)
 
 ```env
-VITE_AUTH_BYPASS=true   # Bypass JWT, injecte un utilisateur mock
-VITE_API_URL=http://localhost  # URL de l'API Gateway
+VITE_APP_URL_OPERATOR=/production/
+VITE_APP_URL_LOGISTICS=/logistics/
+VITE_APP_URL_SALES=/sales/
+VITE_APP_URL_ADMIN=/admin/
+VITE_PORTAL_URL=/
 ```
 
-Quand `VITE_AUTH_BYPASS=true`, les routes protégées sont accessibles sans authentification réelle.
+Toutes les routes utilisent des chemins relatifs, ce qui confie le routage dynamique directement à NGINX.
+
+Si vous souhaitez développer une app métier de manière isolée sans flux login, vous pouvez ajouter `VITE_AUTH_BYPASS=true` — cela injecte un utilisateur mock et ignore la vérification de session.
 
 ---
 
 ## Développement local
 
+L'approche privilégiée pour le développement local est le mode "production-like" avec Docker complet. NGINX sert directement les assets statiques front-end compilés à l'intérieur du conteneur, ce qui garantit une fidélité totale avec le déploiement final et évite les problèmes de CORS ou d'isolation de `localStorage`.
+
 | Variable | Valeur | Effet |
 |---|---|---|
 | `VITE_AUTH_BYPASS=true` | `.env.development` | Accès direct aux routes protégées ; utilisateur mock injecté |
-| `VITE_AUTH_BYPASS=false` | test du flux login | Comportement production : redirection vers `/login` si pas de token |
+| `VITE_AUTH_BYPASS=false` | test du flux login | Apps métier : redirect portail `/` si pas de token ; portail : page login réelle |
 
 ```bash
-# Démarrer l'infrastructure (bases de données, RabbitMQ, monitoring)
-docker compose -f infrastructure/docker/docker-compose.yml up -d
+# Démarrer l'infrastructure complète (Front-ends compilés + DBs + RabbitMQ + NGINX + Microservices)
+cd infrastructure/docker
+docker compose up -d --build
 
-# Démarrer l'application front-end
-cd apps/production-app && npm run dev
+# Point d'entrée utilisateur (NGINX écoute sur le port 80)
+# http://localhost/  (portail via NGINX)
 
-# Initialiser la base (à faire une fois par service)
-cd services/auth-service && node src/db/migrate.js
-cd services/production-service && node src/db/migrate.js
-
-# Lancer un microservice en développement
-cd services/auth-service && npm run start:dev
-cd services/production-service && npm run start:dev
+# Initialiser la base (à faire une fois par service pour le schéma et les données)
+docker exec erp-auth-service npm run db:migrate && docker exec erp-auth-service npm run db:seed
+docker exec erp-production-service npm run db:migrate && docker exec erp-production-service npm run db:seed
+docker exec erp-logistics-service npm run db:migrate && docker exec erp-logistics-service npm run db:seed
 ```
+
+> **Hot-Reloading (Optionnel)** : Si vous travaillez intensivement sur le front-end et avez besoin du rafraîchissement en temps réel, vous pouvez utiliser la commande `npm run dev:front` à la racine (qui lance Vite sur les ports 4000, 4001, 4002) et monter le fichier `nginx.dev.conf` dans `docker-compose.yml` en remplacement de `nginx.conf`.
 
 ---
 

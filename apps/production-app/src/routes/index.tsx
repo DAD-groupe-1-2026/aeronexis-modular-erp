@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
-import { LoginPage, ProtectedRoute, RoleRedirector } from '@aeronexis-dynamics/auth'
+import { ProtectedRoute } from '@aeronexis-dynamics/auth'
 import { AppLayout } from '@/AppLayout'
 
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })))
@@ -16,47 +16,42 @@ const Loading = () => (
   </div>
 )
 
-export const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <RoleRedirector />,
-  },
-  {
-    path: '/login',
-    element: <LoginPage />,
-  },
-  {
-    element: <ProtectedRoute />,
-    children: [
-      {
-        element: <AppLayout />,
-        children: [
-          {
-            path: '/dashboard',
-            element: <Suspense fallback={<Loading />}><DashboardPage /></Suspense>,
-          },
-          {
-            path: '/orders',
-            element: <Suspense fallback={<Loading />}><OrdersPage /></Suspense>,
-          },
-          {
-            path: '/orders/:orderId',
-            element: <Suspense fallback={<Loading />}><OrderDetailPage /></Suspense>,
-          },
-          {
-            path: '/incident/new',
-            element: <Suspense fallback={<Loading />}><IncidentPage /></Suspense>,
-          },
-          {
-            path: '/incidents/:incidentId',
-            element: <Suspense fallback={<Loading />}><IncidentDetailPage /></Suspense>,
-          },
-          {
-            path: '/history',
-            element: <Suspense fallback={<Loading />}><HistoryPage /></Suspense>,
-          },
-        ],
-      },
-    ],
-  },
-])
+export const router = createBrowserRouter(
+  [
+    {
+      element: <ProtectedRoute redirectToPortal />,
+      children: [
+        {
+          element: <AppLayout />,
+          children: [
+            {
+              index: true,
+              element: <Suspense fallback={<Loading />}><DashboardPage /></Suspense>,
+            },
+            {
+              path: '/orders',
+              element: <Suspense fallback={<Loading />}><OrdersPage /></Suspense>,
+            },
+            {
+              path: '/orders/:orderId',
+              element: <Suspense fallback={<Loading />}><OrderDetailPage /></Suspense>,
+            },
+            {
+              path: '/incident/new',
+              element: <Suspense fallback={<Loading />}><IncidentPage /></Suspense>,
+            },
+            {
+              path: '/incidents/:incidentId',
+              element: <Suspense fallback={<Loading />}><IncidentDetailPage /></Suspense>,
+            },
+            {
+              path: '/history',
+              element: <Suspense fallback={<Loading />}><HistoryPage /></Suspense>,
+            },
+          ],
+        },
+      ],
+    },
+  ],
+  { basename: '/production' },
+)

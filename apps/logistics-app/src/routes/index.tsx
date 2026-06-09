@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
-import { LoginPage, ProtectedRoute, RoleRedirector } from '@aeronexis-dynamics/auth'
+import { ProtectedRoute, RoleRoute } from '@aeronexis-dynamics/auth'
 import AppLayout from '../AppLayout'
 
 const DashboardView = lazy(() => import('../pages/DashboardView'))
@@ -14,56 +14,55 @@ const LoadingFallback = () => (
   </div>
 )
 
-export const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <RoleRedirector />,
-  },
-  {
-    path: '/login',
-    element: <LoginPage />,
-  },
-  {
-    element: <ProtectedRoute />,
-    children: [
-      {
-        path: '/logistics',
-        element: <AppLayout />,
-        children: [
-          {
-            index: true,
-            element: (
-              <Suspense fallback={<LoadingFallback />}>
-                <DashboardView />
-              </Suspense>
-            ),
-          },
-          {
-            path: 'stocks',
-            element: (
-              <Suspense fallback={<LoadingFallback />}>
-                <StocksView />
-              </Suspense>
-            ),
-          },
-          {
-            path: 'reservations',
-            element: (
-              <Suspense fallback={<LoadingFallback />}>
-                <ReservationsView />
-              </Suspense>
-            ),
-          },
-          {
-            path: 'shipments',
-            element: (
-              <Suspense fallback={<LoadingFallback />}>
-                <ShipmentsView />
-              </Suspense>
-            ),
-          },
-        ],
-      },
-    ],
-  },
-])
+export const router = createBrowserRouter(
+  [
+    {
+      element: <ProtectedRoute redirectToPortal />,
+      children: [
+        {
+          element: <RoleRoute allowedRoles={['logistics', 'admin', 'director']} />,
+          children: [
+            {
+              element: <AppLayout />,
+              children: [
+                {
+                  index: true,
+                  element: (
+                    <Suspense fallback={<LoadingFallback />}>
+                      <DashboardView />
+                    </Suspense>
+                  ),
+                },
+                {
+                  path: 'stocks',
+                  element: (
+                    <Suspense fallback={<LoadingFallback />}>
+                      <StocksView />
+                    </Suspense>
+                  ),
+                },
+                {
+                  path: 'reservations',
+                  element: (
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ReservationsView />
+                    </Suspense>
+                  ),
+                },
+                {
+                  path: 'shipments',
+                  element: (
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ShipmentsView />
+                    </Suspense>
+                  ),
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+  { basename: '/logistics' },
+)
