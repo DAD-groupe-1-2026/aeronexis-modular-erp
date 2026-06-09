@@ -58,6 +58,7 @@ services:
       - production-service
       - logistics-service
       - sales-service
+      - notification-service
     networks:
       - aeronexis-network
 
@@ -131,6 +132,23 @@ services:
     depends_on:
       - postgres
       - rabbitmq
+    networks:
+      - aeronexis-network
+
+  notification-service:
+    build:
+      context: ../../
+      dockerfile: services/notification-service/Dockerfile
+    container_name: erp-notification-service
+    ports:
+      - "3006:3006"
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      REDIS_URL: redis://redis:6379
+      PORT: 3006
+    depends_on:
+      - rabbitmq
+      - redis
     networks:
       - aeronexis-network
 

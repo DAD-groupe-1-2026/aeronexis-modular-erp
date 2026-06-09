@@ -1,13 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/Table';
-import { Badge } from '@aeronexis-dynamics/ui';
-import { Button } from '@aeronexis-dynamics/ui';
+import { DataTable, Badge, Button } from '@aeronexis-dynamics/ui';
 import { Download, Plus, AlertCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getMaterials } from '../api/materials';
 import { formatCategory, formatDateTime, toNumber } from '../lib/utils';
+import { createColumnHelper } from '@tanstack/react-table';
+import type { LogisticsStockItem } from '@aeronexis-dynamics/shared-types';
 
 const pageVariants = {
   initial: { opacity: 0, y: 15 },
@@ -21,15 +21,93 @@ const pageTransition = {
   duration: 0.4
 };
 
+const columnHelper = createColumnHelper<LogisticsStockItem>();
+
 export default function StocksView() {
   const { data: materials = [], isLoading: loading } = useQuery({ queryKey: ['materials'], queryFn: getMaterials });
   const { searchQuery = '' } = useOutletContext<{ searchQuery?: string }>() || {};
 
-  const filteredMaterials = materials.filter(mat =>
-    mat.materialCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    mat.materialName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    mat.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredMaterials = useMemo(() => materials.filter(mat =>
+    mat?.materialCode?.toLowerCase().includes(searchQuery?.toLowerCase() || '') ||
+    mat?.materialName?.toLowerCase().includes(searchQuery?.toLowerCase() || '') ||
+    mat?.category?.toLowerCase().includes(searchQuery?.toLowerCase() || '')
+  ), [materials, searchQuery]);
+
+  const columns = useMemo(() => [
+    columnHelper.accessor('materialCode', {
+      header: 'Référence',
+      cell: info => <span className="font-mono text-sm text-indigo-400 font-bold">{info.getValue()}</span>,
+      size: 120,
+    }),
+    columnHelper.accessor('materialName', {
+      header: 'Désignation',
+      cell: info => <span className="font-medium text-white">{info.getValue()}</span>,
+    }),
+    columnHelper.accessor('category', {
+      header: 'Catégorie',
+      cell: info => <span className="text-slate-400">{formatCategory(info.getValue() as string)}</span>,
+    }),
+    columnHelper.accessor('quantityAvailable', {
+      header: () => <div className="text-right">Disponible</div>,
+      cell: info => {
+        const mat = info.row.original;
+        const available = toNumber(mat.quantityAvailable);
+        const reorderLevel = toNumber(mat.reorderLevel);
+        const isCritical = available < reorderLevel;
+        return (
+          <div className="text-right font-mono font-bold">
+            <span className={isCritical ? 'text-red-400' : 'text-slate-200'}>
+              {available} {mat.unit}
+            </span>
+          </div>
+        );
+      },
+    }),
+    columnHelper.accessor('quantityReserved', {
+      header: () => <div className="text-right">Réservé</div>,
+      cell: info => {
+        const mat = info.row.original;
+        const reserved = toNumber(mat.quantityReserved);
+        return <div className="text-right font-mono text-slate-400">{reserved} {mat.unit}</div>;
+      },
+    }),
+    columnHelper.display({
+      id: 'status',
+      header: 'Statut',
+      cell: info => {
+        const mat = info.row.original;
+        const available = toNumber(mat.quantityAvailable);
+        const reorderLevel = toNumber(mat.reorderLevel);
+        const isCritical = available < reorderLevel;
+        return isCritical ? (
+          <div className="flex items-center text-red-400 text-xs font-bold bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-md w-max">
+            <AlertCircle className="w-3.5 h-3.5 mr-1.5" />
+            ALERTE (Min {reorderLevel})
+          </div>
+        ) : (
+          <Badge variant="success" className="shadow-[0_0_10px_rgba(16,185,129,0.2)]">OK</Badge>
+        );
+      },
+    }),
+    columnHelper.accessor('updatedAt', {
+      header: 'Dernier Mouvement',
+      cell: info => {
+        const val = info.getValue() ?? info.row.original.createdAt ?? '';
+        return <span className="text-slate-500 font-mono text-xs">{formatDateTime(val)}</span>;
+      },
+      size: 180,
+    }),
+    columnHelper.display({
+      id: 'actions',
+      header: '',
+      cell: info => (
+        <div className="text-right">
+          <Button variant="ghost" size="sm" className="h-8 shadow-none py-0 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors" onClick={() => alert('Actions sur ' + info.row.original.materialCode)}>Actions</Button>
+        </div>
+      ),
+      size: 96,
+    }),
+  ], []);
 
   return (
     <motion.div 
@@ -57,73 +135,11 @@ export default function StocksView() {
         </div>
       </div>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-        className="rounded-2xl border border-white/10 bg-[#0a0a0c]/80 backdrop-blur-2xl shadow-2xl overflow-hidden"
-      >
-        <div className="">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-32">Référence</TableHead>
-                <TableHead>Désignation</TableHead>
-                <TableHead>Catégorie</TableHead>
-                <TableHead className="text-right">Disponible</TableHead>
-                <TableHead className="text-right">Réservé</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead className="w-[180px]">Dernier Mouvement</TableHead>
-                <TableHead className="w-24"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center text-slate-400">Chargement...</TableCell>
-                </TableRow>
-              ) : filteredMaterials.map((mat) => {
-                const available = toNumber(mat.quantityAvailable);
-                const reserved = toNumber(mat.quantityReserved);
-                const reorderLevel = toNumber(mat.reorderLevel);
-                const isCritical = available < reorderLevel;
-
-                return (
-                  <TableRow key={mat.id}>
-                    <TableCell className="font-mono text-sm text-indigo-400 font-bold">
-                      {mat.materialCode}
-                    </TableCell>
-                    <TableCell className="font-medium text-white">{mat.materialName}</TableCell>
-                    <TableCell className="text-slate-400">{formatCategory(mat.category)}</TableCell>
-                    <TableCell className="text-right font-mono font-bold">
-                      <span className={isCritical ? 'text-red-400' : 'text-slate-200'}>
-                        {available} {mat.unit}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-slate-400">{reserved} {mat.unit}</TableCell>
-                    <TableCell>
-                      {isCritical ? (
-                        <div className="flex items-center text-red-400 text-xs font-bold bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-md w-max">
-                          <AlertCircle className="w-3.5 h-3.5 mr-1.5" />
-                          ALERTE (Min {reorderLevel})
-                        </div>
-                      ) : (
-                        <Badge variant="success" className="shadow-[0_0_10px_rgba(16,185,129,0.2)]">OK</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-slate-500 font-mono text-xs">
-                      {formatDateTime(mat.updatedAt ?? mat.createdAt ?? '')}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" className="h-8 shadow-none py-0 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors" onClick={() => alert('Actions sur ' + mat.materialCode)}>Actions</Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      </motion.div>
+      {loading ? (
+        <div className="h-24 flex items-center justify-center text-slate-400">Chargement...</div>
+      ) : (
+        <DataTable columns={columns} data={filteredMaterials} />
+      )}
     </motion.div>
   );
 }

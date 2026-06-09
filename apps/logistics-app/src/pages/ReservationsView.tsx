@@ -1,13 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/Table';
-import { Badge } from '@aeronexis-dynamics/ui';
-import { Button } from '@aeronexis-dynamics/ui';
+import { DataTable, Badge, Button } from '@aeronexis-dynamics/ui';
 import { Lock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getReservations } from '../api/reservations';
 import { formatDateTime, toNumber } from '../lib/utils';
+import { createColumnHelper } from '@tanstack/react-table';
+import type { LogisticsReservation } from '@aeronexis-dynamics/shared-types';
 
 const pageVariants = {
   initial: { opacity: 0, y: 15 },
@@ -21,15 +21,75 @@ const pageTransition = {
   duration: 0.4
 };
 
+const columnHelper = createColumnHelper<LogisticsReservation>();
+
 export default function ReservationsView() {
   const { data: reservations = [], isLoading: loading } = useQuery({ queryKey: ['reservations'], queryFn: getReservations });
   const { searchQuery = '' } = useOutletContext<{ searchQuery?: string }>() || {};
 
-  const filteredReservations = reservations.filter(res =>
-    res.workOrderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (res.stockItem?.materialName ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    res.stockItemId.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredReservations = useMemo(() => reservations.filter(res =>
+    res?.workOrderId?.toLowerCase().includes(searchQuery?.toLowerCase() || '') ||
+    (res?.stockItem?.materialName ?? '').toLowerCase().includes(searchQuery?.toLowerCase() || '') ||
+    res?.stockItemId?.toLowerCase().includes(searchQuery?.toLowerCase() || '')
+  ), [reservations, searchQuery]);
+
+  const columns = useMemo(() => [
+    columnHelper.accessor('workOrderId', {
+      header: 'N° Ordre (OF)',
+      cell: info => <span className="font-mono text-sm font-bold text-indigo-400">{info.getValue()}</span>,
+      size: 160,
+    }),
+    columnHelper.display({
+      id: 'article',
+      header: 'Article',
+      cell: info => {
+        const res = info.row.original;
+        return (
+          <>
+            <span className="font-medium text-white">
+              {res.stockItem?.materialName ?? res.stockItem?.materialCode ?? '—'}
+            </span>
+            <span className="block text-xs text-slate-500 font-mono mt-0.5">stockItemId: {res.stockItemId}</span>
+          </>
+        );
+      },
+    }),
+    columnHelper.accessor('quantity', {
+      header: () => <div className="text-right">Qté Réservée</div>,
+      cell: info => <div className="text-right font-mono font-medium text-slate-300">{toNumber(info.getValue() as string)}</div>,
+    }),
+    columnHelper.accessor('status', {
+      header: 'Statut',
+      cell: info => {
+        const status = info.getValue();
+        if (status === 'pending') return <Badge variant="warning">En attente</Badge>;
+        if (status === 'confirmed') return <Badge variant="warning">Confirmée</Badge>;
+        if (status === 'fulfilled') return <Badge variant="success">Honorée</Badge>;
+        if (status === 'cancelled') return <Badge variant="default">Annulée</Badge>;
+        return null;
+      },
+    }),
+    columnHelper.accessor('createdAt', {
+      header: 'Date d\'Allocation',
+      cell: info => <span className="text-slate-400 font-mono text-xs">{formatDateTime(info.getValue() ?? '')}</span>,
+    }),
+    columnHelper.display({
+      id: 'actions',
+      header: '',
+      cell: info => {
+        const res = info.row.original;
+        if (res.status === 'pending' || res.status === 'confirmed') {
+          return (
+            <div className="text-right">
+              <Button variant="ghost" size="sm" className="h-8 text-indigo-400 hover:text-indigo-300 hover:bg-white/10 rounded-lg" onClick={() => alert('Gestion de la réservation ' + res.workOrderId)}>Gérer</Button>
+            </div>
+          );
+        }
+        return null;
+      },
+      size: 96,
+    }),
+  ], []);
 
   return (
     <motion.div 
@@ -51,61 +111,11 @@ export default function ReservationsView() {
         </Button>
       </div>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-        className="rounded-2xl border border-white/10 bg-[#0a0a0c]/80 backdrop-blur-2xl shadow-2xl overflow-hidden"
-      >
-        <div className="">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-40">N° Ordre (OF)</TableHead>
-                <TableHead>Article</TableHead>
-                <TableHead className="text-right">Qté Réservée</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead>Date d'Allocation</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-slate-400">Chargement...</TableCell>
-                </TableRow>
-              ) : filteredReservations.map((res) => (
-                <TableRow key={res.id}>
-                  <TableCell className="font-mono text-sm font-bold text-indigo-400">
-                    {res.workOrderId}
-                  </TableCell>
-                  <TableCell className="font-medium text-white">
-                    {res.stockItem?.materialName ?? res.stockItem?.materialCode ?? '—'}
-                    <span className="block text-xs text-slate-500 font-mono mt-0.5">stockItemId: {res.stockItemId}</span>
-                  </TableCell>
-                  <TableCell className="text-right font-mono font-medium text-slate-300">
-                    {toNumber(res.quantity)}
-                  </TableCell>
-                  <TableCell>
-                    {res.status === 'pending' && <Badge variant="warning">En attente</Badge>}
-                    {res.status === 'confirmed' && <Badge variant="warning">Confirmée</Badge>}
-                    {res.status === 'fulfilled' && <Badge variant="success">Honorée</Badge>}
-                    {res.status === 'cancelled' && <Badge variant="default">Annulée</Badge>}
-                  </TableCell>
-                  <TableCell className="text-slate-400 font-mono text-xs">
-                    {formatDateTime(res.createdAt ?? '')}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {(res.status === 'pending' || res.status === 'confirmed') && (
-                       <Button variant="ghost" size="sm" className="h-8 text-indigo-400 hover:text-indigo-300 hover:bg-white/10 rounded-lg" onClick={() => alert('Gestion de la réservation ' + res.workOrderId)}>Gérer</Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </motion.div>
+      {loading ? (
+        <div className="h-24 flex items-center justify-center text-slate-400">Chargement...</div>
+      ) : (
+        <DataTable columns={columns} data={filteredReservations} />
+      )}
     </motion.div>
   );
 }

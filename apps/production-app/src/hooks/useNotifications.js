@@ -5,7 +5,8 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    const socket = io("http://localhost:3006");
+    // Le gateway NGINX proxifiera automatiquement /socket.io/ vers notification-service
+    const socket = io();
 
     socket.on("connect", () => {
       console.log("Connected to notification service");

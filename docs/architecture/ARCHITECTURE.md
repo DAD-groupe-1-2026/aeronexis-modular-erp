@@ -20,7 +20,7 @@ flowchart TD
         AUTH[auth\nSécurisation + droits accès]
         APICLIENT[api-client\nNormalisation messages + HTTP]
         SHARED[shared-types\nContrats inter-couches]
-        UI[ui\nComposants React partagés]
+        UI[ui\nComposants UI React partagés\n(AppLayout, TopHeader, Sidebar...)]
     end
 
     subgraph C3 [Couche 3 — Plateforme / Gateway]
@@ -76,7 +76,7 @@ aeronexis-modular-erp/
 │   ├── auth/                    # Sécurisation flux locaux + gestion des droits
 │   ├── api-client/              # Normalisation messages + couche HTTP
 │   ├── shared-types/            # Contrats inter-couches (types, DTOs, interfaces)
-│   └── ui/                      # Composants React réutilisables (QueryErrorAlert, etc.)
+│   └── ui/                      # Composants React UI réutilisables (AppLayout, TopHeader, DataTable, etc.)
 ├── services/                    # Couches 3 & 4 : Plateforme + Microservices
 │   ├── api-gateway/             # Couche 3 : NGINX (nginx.conf + Dockerfile)
 │   ├── auth-service/            # Couche 4 : Express + Sequelize — JWT, RBAC
@@ -111,15 +111,9 @@ Chaque application correspond à un rôle métier de l'entreprise.
 
 ```
 apps/<nom>-app/src/
-├── components/            # Tous les composants React (UI + metier) — un seul niveau
-│   ├── Button.tsx
-│   ├── Card.tsx
-│   ├── Badge.tsx
-│   ├── Form.tsx
-│   ├── Progress.tsx
-│   ├── Sidebar.tsx
-│   ├── LotProgressCard.tsx
-│   └── IncidentBadge.tsx
+├── components/            # Composants React spécifiques à l'application
+│   ├── LotProgressCard.tsx # Ex: Composant métier spécifique
+│   └── IncidentBadge.tsx   # Ex: Composant métier spécifique
 ├── pages/                 # Écrans — UI + React Query inline (useQuery / useMutation)
 │   ├── DashboardPage.tsx
 │   ├── OrdersPage.tsx
@@ -135,18 +129,18 @@ apps/<nom>-app/src/
 │   └── users.ts
 ├── lib/
 │   └── utils.ts          # Utilitaires (cn, etc.)
-├── AppLayout.tsx          # Structure globale de l'app (sidebar + outlet)
+├── AppLayout.tsx          # Wrapper utilisant SharedAppLayout, Sidebar et TopHeader de @aeronexis-dynamics/ui
 ├── App.tsx                # Providers : QueryClientProvider + RouterProvider
 ├── main.tsx
 └── index.css
 ```
 
 **Principes de la structure simplifiée :**
-- Pas de sous-dossiers dans `components/` — tous les fichiers au même niveau
+- Les composants d'interface génériques (boutons, tables, modales) et les structures globales (Sidebar, TopHeader, AppLayout) **doivent** être importés depuis `@aeronexis-dynamics/ui` pour éviter la redondance et garantir l'uniformité du Glassmorphism.
+- Pas de sous-dossiers dans `components/` — ce dossier ne contient que les composants **métier** très spécifiques à l'app.
 - Pas de dossier `hooks/` — `useQuery` / `useMutation` sont appelés directement dans le composant page
 - Nomenclature claire : les noms de fichiers sont explicites (ex: `OrderDetailPage.tsx`)
-- Imports courts : `import { Button } from '@/components/Button'`
-- `AppLayout.tsx` à la racine de `src/` (composant de structure globale, distinct de `App.tsx`)
+- `AppLayout.tsx` à la racine de `src/` (configure et injecte la configuration spécifique dans le layout partagé)
 - Séparation claire : `pages/` (UI + React Query) → `api/` (HTTP)
 
 **Règle de dépendance** : `pages/` → `api/` → `@aeronexis-dynamics/api-client`.
@@ -215,7 +209,7 @@ Modules partagés entre toutes les applications.
 | `auth` | Sécurisation des flux locaux : `LoginPage`, `ProtectedRoute`, `RoleRoute`, `AppRedirector`, `useAuthStore` (JWT), `logoutAndRedirect`, `isAuthBypassed` (bypass dev) |
 | `api-client` | Normalisation des messages `{ status, data, error }` + injection JWT + gestion des erreurs réseau |
 | `shared-types` | Contrats TypeScript inter-couches : entités métier (`WorkOrder`, `Lot`, `User`...), `ApiResponse<T>`, `ApiError`, `ApiStatus` |
-| `ui` | Composants React partagés entre les apps : `QueryErrorAlert` (affichage erreurs API/React Query), `getErrorMessage`, utilitaire `cn` |
+| `ui` | Composants React partagés entre les apps : `AppLayout`, `Sidebar`, `TopHeader`, `DataTable` (TanStack Table), `ToastProvider` (Sonner), UI générique (`Input`, `Select`, `Modal`, `StatusBadge`), et `QueryErrorAlert` |
 
 ### Normalisation des messages
 
@@ -498,15 +492,14 @@ const MaPage = lazy(() => import('@/pages/MaPage').then((m) => ({ default: m.MaP
 
 ### D. Ajouter un composant
 
-Tous les composants vivent dans `apps/<app>/src/components/` au même niveau :
+L'ERP utilise un **Design System partagé** basé sur TailwindCSS (Glassmorphism, thèmes sombres). 
 
-- **Composant UI générique** → `src/components/Button.tsx`, `src/components/Card.tsx`
-- **Composant métier** → `src/components/LotProgressCard.tsx`, `src/components/IncidentBadge.tsx`
-- **Composant de layout** → `src/components/Sidebar.tsx`
+- **Composants UI génériques et Layouts** : Ils vivent et doivent être ajoutés/modifiés dans `packages/ui/components/`. Exemples : `DataTable`, `Sidebar`, `TopHeader`, `Modal`, `DateRangePicker`. 
+- **Composant métier spécifique** : Ils vivent dans `apps/<app>/src/components/` au même niveau. Exemples : `LotProgressCard.tsx`, `IncidentBadge.tsx`.
 
 Nomenclature claire pour éviter les conflits : capitaliser les noms (ex: `Button.tsx`, pas `button.tsx`).
 
-**Note :** `AppLayout.tsx` est à la racine de `src/` car c'est un composant de structure globale.
+**Note :** `AppLayout.tsx` est à la racine de `src/` de chaque app car il se charge de lier la `Sidebar` générique (avec le menu de l'app) au `SharedAppLayout`.
 
 **Erreurs de requêtes :** utiliser `QueryErrorAlert` depuis `@aeronexis-dynamics/ui` lorsque `isError` est vrai sur une requête React Query :
 
