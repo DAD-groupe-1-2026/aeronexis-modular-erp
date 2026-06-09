@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { DataTable, Badge, Button } from '@aeronexis-dynamics/ui';
 import { Lock } from 'lucide-react';
@@ -24,6 +24,7 @@ const pageTransition = {
 const columnHelper = createColumnHelper<LogisticsReservation>();
 
 export default function ReservationsView() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: reservations = [], isLoading: loading } = useQuery({ queryKey: ['reservations'], queryFn: getReservations });
   const { searchQuery = '' } = useOutletContext<{ searchQuery?: string }>() || {};
@@ -104,6 +105,14 @@ export default function ReservationsView() {
         if (res.status === 'pending' || res.status === 'confirmed') {
           return (
             <div className="text-right flex justify-end gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg" 
+                onClick={() => navigate(`/reservations/${res.id}`)}
+              >
+                Gérer
+              </Button>
               {res.status === 'pending' && (
                 <Button 
                   variant="ghost" 
@@ -127,7 +136,18 @@ export default function ReservationsView() {
             </div>
           );
         }
-        return null;
+        return (
+          <div className="text-right flex justify-end gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg" 
+              onClick={() => navigate(`/reservations/${res.id}`)}
+            >
+              Gérer
+            </Button>
+          </div>
+        );
       },
       size: 96,
     }),
@@ -147,7 +167,7 @@ export default function ReservationsView() {
           <h2 className="text-2xl font-bold text-white tracking-tight">Réservations Matières</h2>
           <p className="text-sm text-slate-400 mt-1">Verrouillage anti-double allocation pour OF.</p>
         </div>
-        <Button size="sm" className="rounded-xl shadow-lg gap-2" onClick={() => alert('Module de réservation manuelle non disponible (V1)')}>
+        <Button size="sm" className="rounded-xl shadow-lg gap-2" onClick={() => navigate('/reservations/new')}>
           <Lock className="w-4 h-4" />
           Nouvelle Réservation
         </Button>

@@ -262,7 +262,7 @@ export function DashboardPage() {
               <p className="text-sm text-slate-500 text-center py-8">Aucun incident ouvert</p>
             )}
             {activeIncidents.map((inc) => (
-              <Link key={inc.id} to={`/incident/new?lot=${inc.lotReference}`} className="block">
+              <Link key={inc.id} to={`/incidents/${inc.id}`} className="block">
                 <motion.div 
                   whileHover={{ scale: 1.01, backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
                   transition={{ duration: 0.2 }}

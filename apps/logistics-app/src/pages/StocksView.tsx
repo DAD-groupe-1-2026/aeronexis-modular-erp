@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { DataTable, Badge, Button } from '@aeronexis-dynamics/ui';
 import { Download, Plus, AlertCircle } from 'lucide-react';
@@ -24,6 +24,7 @@ const pageTransition = {
 const columnHelper = createColumnHelper<LogisticsStockItem>();
 
 export default function StocksView() {
+  const navigate = useNavigate();
   const { data: materials = [], isLoading: loading } = useQuery({ queryKey: ['materials'], queryFn: getMaterials });
   const { searchQuery = '' } = useOutletContext<{ searchQuery?: string }>() || {};
 
@@ -102,7 +103,7 @@ export default function StocksView() {
       header: '',
       cell: info => (
         <div className="text-right">
-          <Button variant="ghost" size="sm" className="h-8 shadow-none py-0 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors" onClick={() => alert('Actions sur ' + info.row.original.materialCode)}>Actions</Button>
+          <Button variant="ghost" size="sm" className="h-8 shadow-none py-0 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors" onClick={() => navigate(`/stocks/${info.row.original.id}`)}>Actions</Button>
         </div>
       ),
       size: 96,
@@ -128,7 +129,7 @@ export default function StocksView() {
             <Download className="w-4 h-4" />
             Exporter CSV
           </Button>
-          <Button size="sm" className="rounded-xl shadow-lg gap-2" onClick={() => alert("Création d'article non implémentée (V1)")}>
+          <Button size="sm" className="rounded-xl shadow-lg gap-2" onClick={() => navigate('/stocks/new')}>
             <Plus className="w-4 h-4" />
             Nouvel Article
           </Button>

@@ -16,6 +16,7 @@ router.patch('/stock/:id', ctrl.updateStockItem)
 router.get('/reservations', ctrl.listReservations)
 router.post('/reservations', ctrl.createReservation)
 router.patch('/reservations/:id', ctrl.updateReservation)
+router.post('/reservations/:id/message', ctrl.sendReservationMessage)
 
 // Shipments
 router.get('/shipments', ctrl.listShipments)

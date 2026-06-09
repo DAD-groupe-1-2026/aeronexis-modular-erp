@@ -43,6 +43,16 @@ export function buildNotification(event) {
         createdAt: new Date()
       }
 
+    case "RESERVATION_MESSAGE":
+      return {
+        targetApp: 'production',
+        userId: 'system',
+        type: "info",
+        title: `Message de la Logistique (Réservation ${data.reservationId || ''})`,
+        message: data.message,
+        createdAt: new Date()
+      }
+
     default:
       return null
   }

@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize')
 const sequelize = require('../db/sequelize')
+const { publishEvent, EVENTS } = require('@aeronexis/event-bus')
 
 // StockItem : Gestion des stocks de matières premières
 const StockItem = sequelize.define(
@@ -144,6 +145,14 @@ const Shipment = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    reservationId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'reservations',
+        key: 'id',
+      },
+    },
   },
   {
     tableName: 'shipments',
@@ -154,5 +163,20 @@ const Shipment = sequelize.define(
 // Associations
 StockItem.hasMany(Reservation, { foreignKey: 'stockItemId', as: 'reservations' })
 Reservation.belongsTo(StockItem, { foreignKey: 'stockItemId', as: 'stockItem' })
+
+Reservation.hasMany(Shipment, { foreignKey: 'reservationId', as: 'shipments' })
+Shipment.belongsTo(Reservation, { foreignKey: 'reservationId', as: 'reservation' })
+
+// Events
+StockItem.afterCreate(async (item) => {
+  await publishEvent(EVENTS.MATERIAL_CREATED, 'logistics-service', {
+    stockItemId: item.id,
+    materialCode: item.materialCode,
+    materialName: item.materialName,
+    category: item.category,
+    quantityAvailable: item.quantityAvailable,
+    reorderLevel: item.reorderLevel
+  })
+})
 
 module.exports = { StockItem, Reservation, Shipment }

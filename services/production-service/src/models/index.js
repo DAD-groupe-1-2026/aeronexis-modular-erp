@@ -137,7 +137,8 @@ Incident.afterCreate(async (incident) => {
       id: incident.id,
       severity: incident.severity,
       resolved: incident.resolved,
-      lotId: incident.lotId
+      lotId: incident.lotId,
+      workOrderId: incident.workOrderId
     }
   )
 
@@ -152,7 +153,8 @@ Incident.afterUpdate(async (incident) => {
       'production-service',
       {
         id: incident.id,
-        lotId: incident.lotId
+        lotId: incident.lotId,
+        workOrderId: incident.workOrderId
       }
     )
 
@@ -209,7 +211,8 @@ Material.afterCreate(
         id: material.id,
         name: material.name,
         quantity: material.quantity,
-        lotId: material.lotId
+        lotId: material.lotId,
+        workOrderId: material.workOrderId
       }
     )
 
@@ -227,7 +230,8 @@ Material.afterUpdate(
         name: material.name,
         quantity: material.quantity,
         available: material.available,
-        lotId: material.lotId
+        lotId: material.lotId,
+        workOrderId: material.workOrderId
       }
     )
 

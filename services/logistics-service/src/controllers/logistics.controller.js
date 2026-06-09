@@ -150,11 +150,31 @@ async function updateReservation(req, res) {
   }
 }
 
+async function sendReservationMessage(req, res) {
+  try {
+    const reservation = await Reservation.findByPk(req.params.id)
+    if (!reservation) return fail(res, 'NOT_FOUND', 'Reservation not found', 404)
+    
+    const { publishEvent, EVENTS } = require('@aeronexis/event-bus')
+    await publishEvent(EVENTS.RESERVATION_MESSAGE, 'logistics-service', {
+      reservationId: reservation.id,
+      workOrderId: reservation.workOrderId,
+      message: req.body.message
+    })
+    
+    ok(res, { success: true })
+  } catch (err) {
+    fail(res, 'SERVER_ERROR', err.message)
+  }
+}
+
 // ===== SHIPMENTS =====
 
 async function listShipments(_req, res) {
   try {
-    const shipments = await Shipment.findAll()
+    const shipments = await Shipment.findAll({
+      include: [{ model: Reservation, as: 'reservation', include: [{ model: StockItem, as: 'stockItem' }] }]
+    })
     ok(res, shipments)
   } catch (err) {
     fail(res, 'SERVER_ERROR', err.message)
@@ -163,7 +183,9 @@ async function listShipments(_req, res) {
 
 async function getShipment(req, res) {
   try {
-    const shipment = await Shipment.findByPk(req.params.id)
+    const shipment = await Shipment.findByPk(req.params.id, {
+      include: [{ model: Reservation, as: 'reservation', include: [{ model: StockItem, as: 'stockItem' }] }]
+    })
     if (!shipment) return fail(res, 'NOT_FOUND', 'Shipment not found', 404)
     ok(res, shipment)
   } catch (err) {
@@ -199,6 +221,7 @@ module.exports = {
   listReservations,
   createReservation,
   updateReservation,
+  sendReservationMessage,
   listShipments,
   getShipment,
   createShipment,

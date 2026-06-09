@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { DataTable, Badge, Button } from '@aeronexis-dynamics/ui';
 import { Truck } from 'lucide-react';
@@ -24,6 +24,7 @@ const pageTransition = {
 const columnHelper = createColumnHelper<LogisticsShipment>();
 
 export default function ShipmentsView() {
+  const navigate = useNavigate();
   const { data: shipments = [], isLoading: loading } = useQuery({ queryKey: ['shipments'], queryFn: getShipments });
   const { searchQuery = '' } = useOutletContext<{ searchQuery?: string }>() || {};
 
@@ -76,7 +77,7 @@ export default function ShipmentsView() {
       header: '',
       cell: info => (
         <div className="text-right">
-          <Button variant="ghost" size="sm" className="h-8 text-indigo-400 hover:text-indigo-300 hover:bg-white/10 rounded-lg transition-colors" onClick={() => alert('Détails pour ' + info.row.original.orderId)}>Détails</Button>
+          <Button variant="ghost" size="sm" className="h-8 text-indigo-400 hover:text-indigo-300 hover:bg-white/10 rounded-lg transition-colors" onClick={() => navigate(`/shipments/${info.row.original.id}`)}>Détails</Button>
         </div>
       ),
       size: 96,
@@ -97,7 +98,7 @@ export default function ShipmentsView() {
           <h2 className="text-2xl font-bold text-white tracking-tight">Expéditions</h2>
           <p className="text-sm text-slate-400 mt-1">Planification des livraisons et suivi transport.</p>
         </div>
-        <Button size="sm" className="rounded-xl shadow-lg gap-2" onClick={() => alert("Planification d'expédition (V1)")}>
+        <Button size="sm" className="rounded-xl shadow-lg gap-2" onClick={() => navigate('/shipments/new')}>
           <Truck className="w-4 h-4" />
           Planifier Expédition
         </Button>
