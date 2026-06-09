@@ -1,5 +1,4 @@
-import amqplib from "amqplib";
-
+const amqplib = require("amqplib");
 async function sendEvent() {
   const connection = await amqplib.connect("amqp://localhost:5672");
   const channel = await connection.createChannel();
