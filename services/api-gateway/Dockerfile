@@ -14,7 +14,8 @@ RUN npm ci
 
 RUN npm run build \
  && npm run build -w @aeronexis-dynamics/production-app \
- && npm run build -w @aeronexis-dynamics/logistics-app
+ && npm run build -w @aeronexis-dynamics/logistics-app \
+ && npm run build -w @aeronexis-dynamics/sales-app
 
 # ── Runtime stage : NGINX avec assets statiques ───────────────────────────────
 FROM nginx:1.25-alpine
@@ -23,6 +24,7 @@ COPY services/api-gateway/nginx.conf /etc/nginx/nginx.conf
 COPY --from=frontend-builder /app/dist /usr/share/nginx/portal
 COPY --from=frontend-builder /app/apps/production-app/dist /usr/share/nginx/production
 COPY --from=frontend-builder /app/apps/logistics-app/dist /usr/share/nginx/logistics
+COPY --from=frontend-builder /app/apps/sales-app/dist /usr/share/nginx/sales
 
 EXPOSE 80
 

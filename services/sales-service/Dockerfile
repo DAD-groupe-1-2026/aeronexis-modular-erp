@@ -2,10 +2,13 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY services/sales-service/package.json ./
-RUN npm install --production
+COPY package*.json ./
+COPY packages ./packages
+COPY services/sales-service ./services/sales-service
 
-COPY services/sales-service/src ./src
+RUN npm install --omit=dev
+
+WORKDIR /app/services/sales-service
 
 EXPOSE 3004
 

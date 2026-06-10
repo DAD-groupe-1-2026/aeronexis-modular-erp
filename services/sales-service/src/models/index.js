@@ -174,4 +174,18 @@ SalesOrder.belongsTo(Client, { foreignKey: 'clientId', as: 'client' })
 SalesOrder.hasMany(OrderItem, { foreignKey: 'salesOrderId', as: 'items' })
 OrderItem.belongsTo(SalesOrder, { foreignKey: 'salesOrderId', as: 'order' })
 
+// Events
+const { publishEvent, EVENTS } = require('@aeronexis/event-bus')
+
+SalesOrder.afterCreate(async (order) => {
+  const client = await Client.findByPk(order.clientId)
+  await publishEvent(EVENTS.ORDER_CREATED, 'sales-service', {
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    clientId: order.clientId,
+    clientName: client ? client.companyName : 'Client Inconnu',
+    deliveryDate: order.deliveryDate
+  })
+})
+
 module.exports = { Client, SalesOrder, OrderItem }

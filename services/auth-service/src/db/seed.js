@@ -62,6 +62,24 @@ async function seed() {
       console.log('Logistics user already exists. siteName updated.')
     }
 
+    const salesEmail = 'sales@aeronexis.com'
+    const existingSales = await User.findOne({ where: { email: salesEmail } })
+
+    if (!existingSales) {
+      await User.create({
+        firstName: 'Claire',
+        lastName: 'Commerciale',
+        email: salesEmail,
+        passwordHash: 'Sales123!',
+        role: 'sales',
+        siteName: 'BUREAU VENTES',
+      })
+      console.log('Sales user seeded (sales@aeronexis.com / Sales123!).')
+    } else {
+      await existingSales.update({ siteName: 'BUREAU VENTES' })
+      console.log('Sales user already exists. siteName updated.')
+    }
+
     console.log('Auth data seeding complete.')
     process.exit(0)
   } catch (err) {

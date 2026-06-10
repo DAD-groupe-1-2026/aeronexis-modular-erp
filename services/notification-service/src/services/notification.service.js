@@ -14,12 +14,13 @@ export function buildNotification(event) {
         createdAt: new Date()
       }
 
-    case "ORDER_CREATED":
+    case "WORK_ORDER_CREATED":
       return {
-        userId: data.userId || 'system',
+        targetApp: 'production',
+        userId: 'system',
         type: "info",
-        title: "Nouvelle commande",
-        message: `Commande #${data.orderId} créée`,
+        title: "Nouvel Ordre de Fabrication",
+        message: `L'ordre ${data.reference} a été créé automatiquement`,
         createdAt: new Date()
       }
 

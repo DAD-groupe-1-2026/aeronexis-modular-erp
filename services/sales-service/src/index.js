@@ -4,6 +4,7 @@ const cors = require('cors')
 const sequelize = require('./db/sequelize')
 require('./models')
 const salesRoutes = require('./routes/sales.routes')
+const { connectRabbitMQ } = require('@aeronexis/event-bus')
 
 const app = express()
 const PORT = process.env.PORT || 3004
@@ -19,8 +20,9 @@ app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'sales-servi
 
 sequelize
   .authenticate()
-  .then(() => {
+  .then(async () => {
     console.log('Database connected.')
+    await connectRabbitMQ()
     return app.listen(PORT, () =>
       console.log(`sales-service running on port ${PORT}`),
     )

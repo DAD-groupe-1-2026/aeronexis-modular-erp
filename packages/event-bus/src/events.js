@@ -1,5 +1,8 @@
 module.exports = {
 
+  ORDER_CREATED:
+    'ORDER_CREATED',
+
   WORK_ORDER_CREATED:
     'WORK_ORDER_CREATED',
 

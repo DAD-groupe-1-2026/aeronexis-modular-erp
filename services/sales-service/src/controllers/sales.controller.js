@@ -104,6 +104,22 @@ async function updateOrder(req, res) {
   }
 }
 
+async function updateOrderStatus(req, res) {
+  try {
+    const { status } = req.body;
+    if (!['pending', 'confirmed', 'in_production', 'shipped', 'delivered', 'cancelled'].includes(status)) {
+      return fail(res, 'BAD_REQUEST', 'Invalid status', 400)
+    }
+    const order = await SalesOrder.findByPk(req.params.id)
+    if (!order) return fail(res, 'NOT_FOUND', 'Order not found', 404)
+    
+    await order.update({ status })
+    ok(res, order)
+  } catch (err) {
+    fail(res, 'SERVER_ERROR', err.message)
+  }
+}
+
 // ===== STATISTICS =====
 
 async function getStatistics(_req, res) {
@@ -115,9 +131,58 @@ async function getStatistics(_req, res) {
     const confirmedOrders = await SalesOrder.count({ where: { status: 'confirmed' } })
     const deliveredOrders = await SalesOrder.count({ where: { status: 'delivered' } })
     
-    const totalRevenue = await SalesOrder.sum('totalAmount')
+    const { Op } = require('sequelize')
+    
+    const totalRevenue = await SalesOrder.sum('totalAmount', {
+      where: {
+        status: { [Op.ne]: 'cancelled' }
+      }
+    })
+
+    const allOrders = await SalesOrder.findAll({
+      attributes: ['totalAmount', 'orderDate'],
+      where: {
+        status: { [Op.ne]: 'cancelled' }
+      }
+    })
+
+    const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc']
+    const currentMonth = new Date().getMonth()
+    const revenueByMonth = []
+    
+    for (let i = 5; i >= 0; i--) {
+      let d = new Date()
+      d.setMonth(currentMonth - i)
+      const monthIdx = d.getMonth()
+      const year = d.getFullYear()
+      
+      const monthOrders = allOrders.filter(o => {
+        const orderDate = new Date(o.orderDate)
+        return orderDate.getMonth() === monthIdx && orderDate.getFullYear() === year
+      })
+      
+      const revenue = monthOrders.reduce((sum, o) => sum + Number(o.totalAmount), 0)
+      revenueByMonth.push({
+        month: monthNames[monthIdx],
+        revenue
+      })
+    }
+
+    const recentOrders = await SalesOrder.findAll({
+      order: [['createdAt', 'DESC']],
+      limit: 5,
+      include: [
+        { model: Client, as: 'client', attributes: ['clientCode', 'companyName', 'contactName', 'email'] }
+      ]
+    })
 
     ok(res, {
+      totalOrders,
+      totalRevenue: totalRevenue || 0,
+      activeClients,
+      pendingOrders,
+      revenueByMonth,
+      recentOrders,
       clients: {
         total: totalClients,
         active: activeClients,
@@ -147,5 +212,6 @@ module.exports = {
   getOrder,
   createOrder,
   updateOrder,
+  updateOrderStatus,
   getStatistics,
 }

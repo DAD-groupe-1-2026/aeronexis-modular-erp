@@ -17,6 +17,7 @@ router.get('/orders', ctrl.listOrders)
 router.get('/orders/:id', ctrl.getOrder)
 router.post('/orders', ctrl.createOrder)
 router.patch('/orders/:id', ctrl.updateOrder)
+router.patch('/orders/:id/status', ctrl.updateOrderStatus)
 
 // Statistics
 router.get('/statistics', ctrl.getStatistics)

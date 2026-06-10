@@ -144,34 +144,62 @@ export interface LogisticsStockAlert {
   createdAt: string
 }
 
-// ─── Sales domain ─────────────────────────────────────────────────────────────
+// ─── Sales domain (aligné sur sales-service / Sequelize) ─────────────────────
 
-export type OrderStatus = 'draft' | 'confirmed' | 'in_production' | 'delivered' | 'cancelled'
+export type SalesOrderStatus = 'pending' | 'confirmed' | 'in_production' | 'ready' | 'shipped' | 'delivered' | 'cancelled'
+export type ClientCategory = 'standard' | 'premium' | 'enterprise'
+export type ClientStatus = 'active' | 'inactive' | 'suspended'
+
+export interface SalesClient {
+  id: string
+  clientCode: string
+  companyName: string
+  contactName: string
+  email: string
+  phone?: string | null
+  address: string
+  country: string
+  category: ClientCategory
+  status: ClientStatus
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface SalesOrderItem {
+  id: string
+  salesOrderId: string
+  productCode: string
+  productName: string
+  quantity: number | string
+  unitPrice: number | string
+  discount: number | string
+  totalPrice: number | string
+  createdAt?: string
+  updatedAt?: string
+}
 
 export interface SalesOrder {
   id: string
-  reference: string
+  orderNumber: string
   clientId: string
-  clientName: string
-  lines: SalesOrderLine[]
-  status: OrderStatus
-  priority: OrderPriority
-  createdAt: string
-  expectedDeliveryDate: string
+  orderDate: string
+  deliveryDate?: string | null
+  status: SalesOrderStatus
+  totalAmount: number | string
+  currency: string
+  notes?: string | null
+  salesRepresentative: string
+  client?: Pick<SalesClient, 'clientCode' | 'companyName' | 'contactName' | 'email'>
+  items?: SalesOrderItem[]
+  createdAt?: string
+  updatedAt?: string
 }
 
-export interface SalesOrderLine {
-  id: string
-  productReference: string
-  productName: string
-  quantity: number
-  unitPrice: number
-}
-
-export interface Client {
-  id: string
-  name: string
-  country: string
-  contactEmail: string
-  contractsCount: number
+export interface SalesStatistics {
+  totalOrders: number
+  totalRevenue: number
+  activeClients: number
+  pendingOrders: number
+  revenueByMonth: { month: string; revenue: number }[]
+  recentOrders: SalesOrder[]
 }
