@@ -1,4 +1,5 @@
-const { Client, SalesOrder, OrderItem } = require('../models')
+const { Client, Product, SalesOrder, OrderItem } = require('../models')
+const { publishEvent, EVENTS } = require('@aeronexis/event-bus')
 
 function ok(res, data) {
   return res.json({ status: 'success', data })
@@ -53,6 +54,16 @@ async function updateClient(req, res) {
   }
 }
 
+// ===== PRODUCTS =====
+async function listProducts(_req, res) {
+  try {
+    const products = await Product.findAll()
+    ok(res, products)
+  } catch (err) {
+    fail(res, 'SERVER_ERROR', err.message)
+  }
+}
+
 // ===== SALES ORDERS =====
 
 async function listOrders(_req, res) {
@@ -86,8 +97,78 @@ async function getOrder(req, res) {
 
 async function createOrder(req, res) {
   try {
-    const order = await SalesOrder.create(req.body)
-    res.status(201).json({ status: 'success', data: order })
+    const { orderNumber, clientId, deliveryDate, salesRepresentative, notes, items } = req.body;
+    
+    // Calculate totalAmount based on items and products
+    let calculatedTotal = 0;
+    const orderItemsData = [];
+    
+    if (items && Array.isArray(items)) {
+      for (const item of items) {
+        const product = await Product.findByPk(item.productId);
+        if (!product) throw new Error(`Product not found: ${item.productId}`);
+        
+        const quantity = item.quantity || 1;
+        const unitPrice = product.basePrice;
+        const discount = item.discount || 0;
+        const totalPrice = (quantity * unitPrice) * (1 - (discount / 100));
+        
+        calculatedTotal += totalPrice;
+        
+        orderItemsData.push({
+          productCode: product.code,
+          productName: product.name,
+          quantity,
+          unitPrice,
+          discount,
+          totalPrice
+        });
+      }
+    }
+
+    // Determine final amount (if totalAmount provided in body, use it for manual override, otherwise use calculated)
+    const finalTotal = req.body.totalAmount !== undefined ? req.body.totalAmount : calculatedTotal;
+
+    const order = await SalesOrder.create({
+      orderNumber,
+      clientId,
+      deliveryDate,
+      salesRepresentative,
+      notes,
+      totalAmount: finalTotal
+    });
+
+    // Create order items
+    if (orderItemsData.length > 0) {
+      const itemsToCreate = orderItemsData.map(item => ({
+        ...item,
+        salesOrderId: order.id
+      }));
+      await OrderItem.bulkCreate(itemsToCreate);
+    }
+    
+    // Fetch order with items to return
+    const orderWithItems = await SalesOrder.findByPk(order.id, {
+      include: [
+        { model: Client, as: 'client' },
+        { model: OrderItem, as: 'items' }
+      ]
+    });
+
+    // Publish event
+    await publishEvent(EVENTS.ORDER_CREATED, 'sales-service', {
+      orderId: orderWithItems.id,
+      orderNumber: orderWithItems.orderNumber,
+      clientId: orderWithItems.clientId,
+      clientName: orderWithItems.client ? orderWithItems.client.companyName : 'Client Inconnu',
+      deliveryDate: orderWithItems.deliveryDate,
+      items: orderItemsData.map(i => ({
+        productCode: i.productCode,
+        quantity: i.quantity
+      }))
+    });
+
+    res.status(201).json({ status: 'success', data: orderWithItems })
   } catch (err) {
     fail(res, 'SERVER_ERROR', err.message)
   }
@@ -208,6 +289,7 @@ module.exports = {
   getClient,
   createClient,
   updateClient,
+  listProducts,
   listOrders,
   getOrder,
   createOrder,

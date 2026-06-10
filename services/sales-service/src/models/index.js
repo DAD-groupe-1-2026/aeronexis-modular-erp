@@ -58,6 +58,39 @@ const Client = sequelize.define(
   }
 )
 
+// Product : Catalogue de produits
+const Product = sequelize.define(
+  'Product',
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    code: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+      unique: true,
+    },
+    name: {
+      type: DataTypes.STRING(200),
+      allowNull: false,
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    basePrice: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+    },
+  },
+  {
+    tableName: 'products',
+    timestamps: true,
+  }
+)
+
 // SalesOrder : Commandes clients
 const SalesOrder = sequelize.define(
   'SalesOrder',
@@ -177,15 +210,5 @@ OrderItem.belongsTo(SalesOrder, { foreignKey: 'salesOrderId', as: 'order' })
 // Events
 const { publishEvent, EVENTS } = require('@aeronexis/event-bus')
 
-SalesOrder.afterCreate(async (order) => {
-  const client = await Client.findByPk(order.clientId)
-  await publishEvent(EVENTS.ORDER_CREATED, 'sales-service', {
-    orderId: order.id,
-    orderNumber: order.orderNumber,
-    clientId: order.clientId,
-    clientName: client ? client.companyName : 'Client Inconnu',
-    deliveryDate: order.deliveryDate
-  })
-})
 
-module.exports = { Client, SalesOrder, OrderItem }
+module.exports = { Client, Product, SalesOrder, OrderItem }

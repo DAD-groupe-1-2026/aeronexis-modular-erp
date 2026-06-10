@@ -9,6 +9,7 @@ const NewClientView = lazy(() => import('../pages/NewClientView').then(m => ({ d
 const ClientDetailView = lazy(() => import('../pages/ClientDetailView').then(m => ({ default: m.ClientDetailView })));
 const OrdersView = lazy(() => import('../pages/OrdersView').then(m => ({ default: m.OrdersView })));
 const NewOrderView = lazy(() => import('../pages/NewOrderView').then(m => ({ default: m.NewOrderView })));
+const OrderJourneyView = lazy(() => import('../pages/OrderJourneyView').then(m => ({ default: m.OrderJourneyView })));
 
 const LoadingFallback = () => (
   <div className="flex h-64 items-center justify-center text-slate-500 text-sm">
@@ -72,6 +73,14 @@ export const router = createBrowserRouter(
                   element: (
                     <Suspense fallback={<LoadingFallback />}>
                       <NewOrderView />
+                    </Suspense>
+                  ),
+                },
+                {
+                  path: 'orders/:orderNumber/journey',
+                  element: (
+                    <Suspense fallback={<LoadingFallback />}>
+                      <OrderJourneyView />
                     </Suspense>
                   ),
                 },

@@ -2,11 +2,18 @@ import { apiClient } from '@aeronexis-dynamics/api-client';
 import type { 
   SalesOrder, 
   SalesClient, 
-  SalesStatistics 
+  SalesStatistics,
+  SalesProduct
 } from '@aeronexis-dynamics/shared-types';
 
 export async function getStatistics(): Promise<SalesStatistics> {
   const res = await apiClient.get<SalesStatistics>('/api/sales/statistics');
+  if (res.status === 'failure') throw new Error(res.error?.message);
+  return res.data;
+}
+
+export async function getProducts(): Promise<SalesProduct[]> {
+  const res = await apiClient.get<SalesProduct[]>('/api/sales/products');
   if (res.status === 'failure') throw new Error(res.error?.message);
   return res.data;
 }

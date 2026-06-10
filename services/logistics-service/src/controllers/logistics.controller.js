@@ -93,10 +93,21 @@ async function updateReservation(req, res) {
         // Mais dans notre logique ERP, 'pending' ne touchait pas aux qtés. 'confirmed' signifie que c'est réservé
         // Donc on décrémente quantityAvailable et on incrémente quantityReserved
         await stockItem.update({
-          quantityAvailable: stockItem.quantityAvailable - reservation.quantity,
-          quantityReserved: stockItem.quantityReserved + reservation.quantity
+          quantityAvailable: Number(stockItem.quantityAvailable) - Number(reservation.quantity),
+          quantityReserved: Number(stockItem.quantityReserved) + Number(reservation.quantity)
         })
         
+        // Créer une expédition interne (Shipment)
+        await Shipment.create({
+          trackingNumber: `INT-TRK-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          orderId: reservation.workOrderId,
+          destination: 'Atelier de Production',
+          carrier: 'Flotte Interne',
+          status: 'preparing',
+          scheduledDate: new Date(),
+          reservationId: reservation.id
+        })
+
         // Publier l'événement pour la production
         const { publishEvent, EVENTS } = require('@aeronexis/event-bus')
         await publishEvent(EVENTS.RESERVATION_UPDATED, 'logistics-service', {
@@ -115,8 +126,8 @@ async function updateReservation(req, res) {
       if (stockItem) {
         // On restitue le stock disponible et on réduit le réservé
         await stockItem.update({
-          quantityAvailable: stockItem.quantityAvailable + reservation.quantity,
-          quantityReserved: stockItem.quantityReserved - reservation.quantity
+          quantityAvailable: Number(stockItem.quantityAvailable) + Number(reservation.quantity),
+          quantityReserved: Number(stockItem.quantityReserved) - Number(reservation.quantity)
         })
         
         // Publier l'événement
@@ -204,9 +215,33 @@ async function createShipment(req, res) {
 
 async function updateShipment(req, res) {
   try {
-    const shipment = await Shipment.findByPk(req.params.id)
+    const shipment = await Shipment.findByPk(req.params.id, {
+      include: [{ model: Reservation, as: 'reservation', include: [{ model: StockItem, as: 'stockItem' }] }]
+    })
     if (!shipment) return fail(res, 'NOT_FOUND', 'Shipment not found', 404)
+
+    const oldStatus = shipment.status
     await shipment.update(req.body)
+
+    // Si l'expédition est une expédition interne (liée à une réservation production)
+    // et qu'elle passe à "delivered" → la matière première est arrivée en production
+    if (shipment.reservationId && oldStatus !== 'delivered' && shipment.status === 'delivered') {
+      const reservation = shipment.reservation
+      if (reservation) {
+        const { publishEvent, EVENTS } = require('@aeronexis/event-bus')
+        await publishEvent(EVENTS.RESERVATION_UPDATED, 'logistics-service', {
+          reservationId: reservation.id,
+          workOrderId: reservation.workOrderId,
+          materialCode: reservation.stockItem?.materialCode,
+          quantity: reservation.quantity,
+          status: 'fulfilled', // Matière livrée en production
+          deliveredAt: new Date().toISOString()
+        })
+        // Mettre à jour la réservation en "fulfilled"
+        await reservation.update({ status: 'fulfilled' })
+      }
+    }
+
     ok(res, shipment)
   } catch (err) {
     fail(res, 'SERVER_ERROR', err.message)

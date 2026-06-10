@@ -14,6 +14,7 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   className?: string;
   pagination?: boolean;
+  onRowClick?: (row: TData) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -21,6 +22,7 @@ export function DataTable<TData, TValue>({
   data,
   className,
   pagination = true,
+  onRowClick,
 }: DataTableProps<TData, TValue>) {
   const [paginationState, setPaginationState] = useState({
     pageIndex: 0,
@@ -63,7 +65,11 @@ export function DataTable<TData, TValue>({
               table.getRowModel().rows.map((row) => (
                 <tr
                   key={row.id}
-                  className="hover:bg-white/5 transition-colors duration-200"
+                  onClick={() => onRowClick?.(row.original)}
+                  className={cn(
+                    "hover:bg-white/5 transition-colors duration-200",
+                    onRowClick && "cursor-pointer hover:bg-white/[0.08] active:bg-white/10"
+                  )}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-6 py-4 whitespace-nowrap">

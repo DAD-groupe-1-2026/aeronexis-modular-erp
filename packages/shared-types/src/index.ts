@@ -165,6 +165,16 @@ export interface SalesClient {
   updatedAt?: string
 }
 
+export interface SalesProduct {
+  id: string
+  code: string
+  name: string
+  description?: string
+  basePrice: number | string
+  createdAt?: string
+  updatedAt?: string
+}
+
 export interface SalesOrderItem {
   id: string
   salesOrderId: string

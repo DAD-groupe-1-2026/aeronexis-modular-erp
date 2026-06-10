@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button, Badge } from '@aeronexis-dynamics/ui';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Clock, Package, AlertCircle } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getShipmentById, updateShipment } from '../api/shipments';
+import { apiClient } from '@aeronexis-dynamics/api-client';
 import { formatDateTime } from '../lib/utils';
 import type { LogisticsShipment } from '@aeronexis-dynamics/shared-types';
 
@@ -12,6 +13,25 @@ const pageVariants = {
   initial: { opacity: 0, x: 20 },
   in: { opacity: 1, x: 0 },
   out: { opacity: 0, x: -20 }
+};
+
+interface AuditLog {
+  _id: string;
+  eventType: string;
+  service: string;
+  data: Record<string, unknown>;
+  timestamp: string;
+}
+
+const EVENT_LABELS: Record<string, { label: string; color: string }> = {
+  RESERVATION_UPDATED:   { label: 'Réservation mise à jour',  color: 'text-indigo-400' },
+  WORK_ORDER_UPDATED:    { label: 'Ordre de fabrication MàJ', color: 'text-blue-400'   },
+  WORK_ORDER_CREATED:    { label: 'Ordre de fabrication créé', color: 'text-emerald-400'},
+  ORDER_CREATED:         { label: 'Commande créée',            color: 'text-amber-400'  },
+  LOT_UPDATED:           { label: 'Lot mis à jour',            color: 'text-purple-400' },
+  LOT_COMPLETED:         { label: 'Lot terminé',               color: 'text-emerald-400'},
+  MATERIAL_REQUESTED:    { label: 'Matière demandée',          color: 'text-orange-400' },
+  MATERIAL_CREATED:      { label: 'Matière créée',             color: 'text-teal-400'   },
 };
 
 export default function ShipmentDetailView() {
@@ -24,10 +44,24 @@ export default function ShipmentDetailView() {
     queryFn: () => getShipmentById(id!) 
   });
 
+  // Logs depuis le traceability service, filtrés par orderId de l'expédition
+  const { data: logsResp, isLoading: logsLoading } = useQuery({
+    queryKey: ['audit-logs', 'shipment', shipment?.orderId],
+    queryFn: async () => {
+      const res = await apiClient.get<AuditLog[]>(
+        `/api/traceability/logs?orderId=${encodeURIComponent(shipment!.orderId)}`
+      );
+      return res.status === 'success' ? res.data : [];
+    },
+    enabled: !!shipment?.orderId,
+    refetchInterval: 15000,
+  });
+
+  const logs: AuditLog[] = logsResp ?? [];
+
   const [status, setStatus] = useState<LogisticsShipment['status']>('preparing');
   const [deliveredDate, setDeliveredDate] = useState<string>('');
 
-  // Initialize state when data loads
   React.useEffect(() => {
     if (shipment) {
       setStatus(shipment.status);
@@ -41,7 +75,7 @@ export default function ShipmentDetailView() {
     mutationFn: updateShipment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
-      alert('Expédition mise à jour avec succès.');
+      queryClient.invalidateQueries({ queryKey: ['audit-logs', 'shipment', shipment?.orderId] });
     },
     onError: (error) => {
       alert(`Erreur lors de la mise à jour: ${error.message}`);
@@ -61,7 +95,6 @@ export default function ShipmentDetailView() {
   };
 
   if (isLoading) return <div className="p-8 text-slate-400">Chargement...</div>;
-
   if (!shipment) return <div className="p-8 text-red-400">Expédition introuvable.</div>;
 
   return (
@@ -78,7 +111,7 @@ export default function ShipmentDetailView() {
         </Button>
         <div>
           <h2 className="text-2xl font-bold text-white tracking-tight">Détails de l'Expédition</h2>
-          <p className="text-sm text-slate-400 mt-1">Suivi et mise à jour du statut transport.</p>
+          <p className="text-sm text-slate-400 mt-1">Suivi et historique de traçabilité.</p>
         </div>
       </div>
 
@@ -167,6 +200,60 @@ export default function ShipmentDetailView() {
         </form>
 
       </div>
+
+      {/* ── Historique de traçabilité ── */}
+      <div className="bg-slate-900/50 border border-white/10 rounded-2xl p-6 shadow-xl backdrop-blur-sm space-y-4">
+        <div className="flex items-center gap-2">
+          <Clock className="w-5 h-5 text-indigo-400" />
+          <h3 className="text-lg font-semibold text-white">Historique de traçabilité</h3>
+          <span className="text-xs text-slate-500 ml-auto">Référence : <span className="font-mono text-slate-400">{shipment.orderId}</span></span>
+        </div>
+
+        {logsLoading ? (
+          <div className="flex items-center justify-center h-20 text-slate-400 text-sm">Chargement des logs...</div>
+        ) : logs.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-24 gap-2 text-slate-500">
+            <AlertCircle className="w-6 h-6 opacity-50" />
+            <span className="text-sm">Aucun événement enregistré pour cette expédition.</span>
+          </div>
+        ) : (
+          <ol className="relative border-l border-white/10 ml-2 space-y-0">
+            {logs.map((log, idx) => {
+              const meta = EVENT_LABELS[log.eventType] ?? { label: log.eventType, color: 'text-slate-400' };
+              return (
+                <li key={log._id} className="mb-6 ml-6 last:mb-0">
+                  <span className="absolute -left-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 border border-white/10">
+                    <Package className="w-3 h-3 text-indigo-400" />
+                  </span>
+                  <div className="bg-slate-800/40 border border-white/5 rounded-xl px-4 py-3 space-y-1.5">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className={`text-sm font-semibold ${meta.color}`}>{meta.label}</span>
+                      <time className="text-xs text-slate-500 font-mono whitespace-nowrap">
+                        {new Date(log.timestamp).toLocaleString('fr-FR')}
+                      </time>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Service : <span className="text-slate-400">{log.service}</span>
+                    </p>
+                    {/* Données clés du payload */}
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {log.data && Object.entries(log.data)
+                        .filter(([k]) => !['reservationId'].includes(k))
+                        .slice(0, 5)
+                        .map(([k, v]) => (
+                          <span key={k} className="text-xs bg-slate-700/60 text-slate-300 px-2 py-0.5 rounded-full font-mono border border-white/5">
+                            {k}: {String(v)}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </div>
+
     </motion.div>
   );
 }

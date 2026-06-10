@@ -33,7 +33,8 @@ export default function ReservationsView() {
     mutationFn: ({ id, status }: { id: string; status: string }) => updateReservationStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
-      queryClient.invalidateQueries({ queryKey: ['stocks'] }); // Invalidate stocks too
+      queryClient.invalidateQueries({ queryKey: ['stocks'] });
+      queryClient.invalidateQueries({ queryKey: ['shipments'] }); // Refresh shipments after reservation confirms
     }
   });
 
@@ -102,49 +103,28 @@ export default function ReservationsView() {
       header: '',
       cell: info => {
         const res = info.row.original;
-        if (res.status === 'pending' || res.status === 'confirmed') {
-          return (
-            <div className="text-right flex justify-end gap-2">
+        if (res.status !== 'pending' && res.status !== 'confirmed') return null;
+        return (
+          <div className="text-right flex justify-end gap-2" onClick={e => e.stopPropagation()}>
+            {res.status === 'pending' && (
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="h-8 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg" 
-                onClick={() => navigate(`/reservations/${res.id}`)}
-              >
-                Gérer
-              </Button>
-              {res.status === 'pending' && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 text-indigo-400 hover:text-indigo-300 hover:bg-white/10 rounded-lg" 
-                  onClick={() => updateStatus.mutate({ id: res.id, status: 'confirmed' })}
-                  disabled={updateStatus.isPending}
-                >
-                  {updateStatus.isPending ? 'En cours...' : 'Réserver'}
-                </Button>
-              )}
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg" 
-                onClick={() => updateStatus.mutate({ id: res.id, status: 'cancelled' })}
+                className="h-8 text-indigo-400 hover:text-indigo-300 hover:bg-white/10 rounded-lg" 
+                onClick={() => updateStatus.mutate({ id: res.id, status: 'confirmed' })}
                 disabled={updateStatus.isPending}
               >
-                Annuler
+                {updateStatus.isPending ? 'En cours...' : 'Réserver'}
               </Button>
-            </div>
-          );
-        }
-        return (
-          <div className="text-right flex justify-end gap-2">
+            )}
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-8 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg" 
-              onClick={() => navigate(`/reservations/${res.id}`)}
+              className="h-8 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg" 
+              onClick={() => updateStatus.mutate({ id: res.id, status: 'cancelled' })}
+              disabled={updateStatus.isPending}
             >
-              Gérer
+              Annuler
             </Button>
           </div>
         );
@@ -176,7 +156,11 @@ export default function ReservationsView() {
       {loading ? (
         <div className="h-24 flex items-center justify-center text-slate-400">Chargement...</div>
       ) : (
-        <DataTable columns={columns} data={filteredReservations} />
+        <DataTable
+          columns={columns}
+          data={filteredReservations}
+          onRowClick={(res) => navigate(`/reservations/${res.id}`)}
+        />
       )}
     </motion.div>
   );

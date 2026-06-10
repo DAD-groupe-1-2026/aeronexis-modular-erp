@@ -1,6 +1,6 @@
 require('dotenv').config()
 const sequelize = require('./sequelize')
-const { Client, SalesOrder, OrderItem } = require('../models')
+const { Client, Product, SalesOrder, OrderItem } = require('../models')
 
 async function seed() {
   try {
@@ -42,8 +42,31 @@ async function seed() {
         category: 'standard',
         status: 'active',
       },
-    ])
+    ], { ignoreDuplicates: true })
     console.log('Clients seeded.')
+
+    // Products
+    await Product.bulkCreate([
+      {
+        code: 'WING-ALU-001',
+        name: 'Aile en aluminium 6061-T6',
+        description: 'Aile standard pour petits porteurs, alliage aéronautique.',
+        basePrice: 250.00
+      },
+      {
+        code: 'BODY-STEEL-002',
+        name: 'Fuselage en acier inoxydable',
+        description: 'Section centrale de fuselage, haute résistance.',
+        basePrice: 500.00
+      },
+      {
+        code: 'ENGINE-TIT-003',
+        name: 'Composant moteur en titane',
+        description: 'Pièce rotative pour turbine, alliage titane premium.',
+        basePrice: 950.00
+      }
+    ], { ignoreDuplicates: true })
+    console.log('Products seeded.')
 
     // Sales Orders
     const client1 = await Client.findOne({ where: { clientCode: 'CLI-FR-001' } })
@@ -84,7 +107,7 @@ async function seed() {
         notes: 'En attente de confirmation du client',
         salesRepresentative: 'sales@aeronexis.com',
       },
-    ])
+    ], { ignoreDuplicates: true })
     console.log('Sales orders seeded.')
 
     // Order Items
@@ -120,7 +143,7 @@ async function seed() {
         discount: 0,
         totalPrice: 95000.00,
       },
-    ])
+    ], { ignoreDuplicates: true })
     console.log('Order items seeded.')
 
     console.log('All mock data seeded successfully.')

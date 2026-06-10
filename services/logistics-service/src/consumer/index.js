@@ -4,7 +4,7 @@ const { Reservation, StockItem } = require('../models')
 async function setupConsumers() {
   await consumeEvents(
     'logistics_queue',
-    [EVENTS.MATERIAL_REQUESTED, EVENTS.LOT_COMPLETED],
+    [EVENTS.MATERIAL_REQUESTED, EVENTS.LOT_COMPLETED, EVENTS.WORK_ORDER_UPDATED],
     async (routingKey, payload) => {
       try {
         if (routingKey === EVENTS.MATERIAL_REQUESTED) {
@@ -82,6 +82,22 @@ async function setupConsumers() {
             })
           }
           console.log(`[LOGISTICS CONSUMER] Finished product ${payload.data.product} added to stock.`)
+        }
+        else if (routingKey === EVENTS.WORK_ORDER_UPDATED) {
+          console.log('[LOGISTICS CONSUMER] Received WORK_ORDER_UPDATED:', payload)
+          if (payload.data.status === 'done') {
+            const { Shipment } = require('../models')
+            // Create a pending shipment for the client
+            await Shipment.create({
+              trackingNumber: `EXT-TRK-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+              orderId: payload.data.reference, // WorkOrder reference
+              destination: `Client: ${payload.data.clientName || 'Inconnu'}`,
+              carrier: 'Transporteur Externe',
+              status: 'preparing',
+              scheduledDate: new Date()
+            })
+            console.log(`[LOGISTICS CONSUMER] External shipment created for WorkOrder ${payload.data.reference}`)
+          }
         }
       } catch (err) {
         console.error('[LOGISTICS CONSUMER] Error processing event:', err)

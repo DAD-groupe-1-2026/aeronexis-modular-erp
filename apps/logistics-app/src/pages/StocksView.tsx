@@ -98,17 +98,8 @@ export default function StocksView() {
       },
       size: 180,
     }),
-    columnHelper.display({
-      id: 'actions',
-      header: '',
-      cell: info => (
-        <div className="text-right">
-          <Button variant="ghost" size="sm" className="h-8 shadow-none py-0 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors" onClick={() => navigate(`/stocks/${info.row.original.id}`)}>Actions</Button>
-        </div>
-      ),
-      size: 96,
-    }),
   ], []);
+
 
   return (
     <motion.div 
@@ -139,7 +130,11 @@ export default function StocksView() {
       {loading ? (
         <div className="h-24 flex items-center justify-center text-slate-400">Chargement...</div>
       ) : (
-        <DataTable columns={columns} data={filteredMaterials} />
+        <DataTable
+          columns={columns}
+          data={filteredMaterials}
+          onRowClick={(mat) => navigate(`/stocks/${mat.id}`)}
+        />
       )}
     </motion.div>
   );

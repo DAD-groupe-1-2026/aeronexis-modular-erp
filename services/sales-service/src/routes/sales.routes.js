@@ -12,6 +12,9 @@ router.get('/clients/:id', ctrl.getClient)
 router.post('/clients', ctrl.createClient)
 router.patch('/clients/:id', ctrl.updateClient)
 
+// Products
+router.get('/products', ctrl.listProducts)
+
 // Sales Orders
 router.get('/orders', ctrl.listOrders)
 router.get('/orders/:id', ctrl.getOrder)

@@ -1,6 +1,6 @@
 require('dotenv').config()
 const sequelize = require('./sequelize')
-const { WorkOrder, Lot, Material, Incident, HistoryEntry } = require('../models')
+const { WorkOrder, Lot, Material, Incident, HistoryEntry, ProductBOM } = require('../models')
 
 const wo1 = '11111111-1111-1111-1111-111111111111'
 const wo2 = '11111111-1111-1111-1111-111111111112'
@@ -128,6 +128,21 @@ const materialsData = [
   { lotId: lot5, name: 'Alliage aluminium 6061', reference: 'AL-6061', quantity: 20, unit: 'kg', available: 80 },
 ]
 
+const productBOMsData = [
+  // WING-ALU-001 (Aile en aluminium 6061-T6)
+  { productCode: 'WING-ALU-001', materialName: 'Alliage aluminium 6061', materialReference: 'AL-6061', quantityRequiredPerUnit: 15.5, unit: 'kg' },
+  { productCode: 'WING-ALU-001', materialName: 'Rivets Aéronautiques', materialReference: 'RVT-AERO', quantityRequiredPerUnit: 250, unit: 'pcs' },
+  { productCode: 'WING-ALU-001', materialName: 'Peinture de protection', materialReference: 'PNT-PROT', quantityRequiredPerUnit: 2.5, unit: 'L' },
+
+  // BODY-STEEL-002 (Fuselage en acier inoxydable)
+  { productCode: 'BODY-STEEL-002', materialName: 'Acier inoxydable 316L', materialReference: 'SS-316L', quantityRequiredPerUnit: 45.0, unit: 'kg' },
+  { productCode: 'BODY-STEEL-002', materialName: 'Isolant thermique', materialReference: 'ISO-THERM', quantityRequiredPerUnit: 10.0, unit: 'm2' },
+  
+  // ENGINE-TIT-003 (Composant moteur en titane)
+  { productCode: 'ENGINE-TIT-003', materialName: 'Titane Grade 5', materialReference: 'TI-G5', quantityRequiredPerUnit: 4.2, unit: 'kg' },
+  { productCode: 'ENGINE-TIT-003', materialName: 'Roulement Haute Température', materialReference: 'RB-HT-99', quantityRequiredPerUnit: 4, unit: 'pcs' },
+]
+
 const incidentsData = [
   {
     lotId: lot2,
@@ -226,6 +241,9 @@ async function seed() {
 
     await HistoryEntry.bulkCreate(historyData, { ignoreDuplicates: true })
     console.log('History seeded.')
+
+    await ProductBOM.bulkCreate(productBOMsData, { ignoreDuplicates: true })
+    console.log('Product BOMs seeded.')
 
     console.log('All mock data seeded successfully.')
     process.exit(0)

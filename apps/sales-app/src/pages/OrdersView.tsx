@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Plus, GitBranch } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { getOrders, updateOrderStatus } from '../api/sales';
 import { 
   QueryErrorAlert, 
@@ -11,6 +11,7 @@ import {
 
 export function OrdersView() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: orders = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: ['sales-orders'],
@@ -49,7 +50,7 @@ export function OrdersView() {
       }
     },
     {
-      accessorKey: 'expectedDeliveryDate',
+      accessorKey: 'deliveryDate',
       header: 'Date de livraison (Prévue)',
       cell: (info: any) => {
         const date = info.getValue();
@@ -112,9 +113,8 @@ export function OrdersView() {
       cell: (info: any) => {
         const { id, status } = info.row.original;
         if (status !== 'pending') return <span className="text-white/40 text-sm">Traitée</span>;
-        
         return (
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center" onClick={(e) => e.stopPropagation()}>
             <button 
               onClick={() => handleUpdateStatus(id, 'confirmed')}
               className="px-2 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs hover:bg-green-500/30 transition-colors"
@@ -157,6 +157,7 @@ export function OrdersView() {
         <DataTable
           data={orders}
           columns={columns}
+          onRowClick={(order) => navigate(`/orders/${order.orderNumber}/journey`)}
         />
       </Card>
     </div>

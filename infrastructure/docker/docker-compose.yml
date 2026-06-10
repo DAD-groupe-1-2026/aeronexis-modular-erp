@@ -3,9 +3,9 @@ services:
     image: postgres:17-alpine
     container_name: erp-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: aeronexis_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - "5432:5432"
     volumes:
@@ -70,11 +70,15 @@ services:
     ports:
       - "3001:3001"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/aeronexis_db
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       DB_SCHEMA: auth
-      JWT_SECRET: changeme-in-production
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: 1h
       BCRYPT_ROUNDS: 10
+      DEFAULT_ADMIN_PWD: ${DEFAULT_ADMIN_PWD}
+      DEFAULT_OPERATOR_PWD: ${DEFAULT_OPERATOR_PWD}
+      DEFAULT_LOGISTICS_PWD: ${DEFAULT_LOGISTICS_PWD}
+      DEFAULT_SALES_PWD: ${DEFAULT_SALES_PWD}
       PORT: 3001
     depends_on:
       - postgres
@@ -89,9 +93,9 @@ services:
     ports:
       - "3002:3002"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/aeronexis_db
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       DB_SCHEMA: production
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       PORT: 3002
     depends_on:
       - postgres
@@ -107,9 +111,9 @@ services:
     ports:
       - "3003:3003"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/aeronexis_db
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       DB_SCHEMA: logistics
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       PORT: 3003
     depends_on:
       - postgres
@@ -125,9 +129,9 @@ services:
     ports:
       - "3004:3004"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/aeronexis_db
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       DB_SCHEMA: sales
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       PORT: 3004
     depends_on:
       - postgres
@@ -143,7 +147,7 @@ services:
     ports:
       - "3006:3006"
     environment:
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       REDIS_URL: redis://redis:6379
       PORT: 3006
     depends_on:
@@ -160,8 +164,8 @@ services:
     ports:
       - "3005:3005"
     environment:
-      MONGO_URI: mongodb://mongodb:27017/aeronexis_db
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      MONGO_URI: mongodb://mongodb:27017/${DB_NAME}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       PORT: 3005
     depends_on:
       - mongodb

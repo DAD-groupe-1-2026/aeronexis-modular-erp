@@ -18,6 +18,20 @@ const WorkOrder = sequelize.define(
   { tableName: 'work_orders', schema: SCHEMA },
 )
 
+// ─── ProductBOM ──────────────────────────────────────────────────────────────
+const ProductBOM = sequelize.define(
+  'ProductBOM',
+  {
+    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+    productCode: { type: DataTypes.STRING, allowNull: false },
+    materialName: { type: DataTypes.STRING, allowNull: false },
+    materialReference: { type: DataTypes.STRING, allowNull: false },
+    quantityRequiredPerUnit: { type: DataTypes.FLOAT, allowNull: false },
+    unit: { type: DataTypes.STRING, allowNull: false },
+  },
+  { tableName: 'product_boms', schema: SCHEMA },
+)
+
 // ─── Lot ─────────────────────────────────────────────────────────────────────
 const Lot = sequelize.define(
   'Lot',
@@ -119,7 +133,8 @@ WorkOrder.afterUpdate(async (workOrder) => {
     {
       id: workOrder.id,
       reference: workOrder.reference,
-      status: workOrder.status
+      status: workOrder.status,
+      clientName: workOrder.clientName
     }
   )
 
@@ -237,4 +252,4 @@ Material.afterUpdate(
 
   }
 )
-module.exports = { WorkOrder, Lot, Material, Incident, HistoryEntry }
+module.exports = { WorkOrder, Lot, Material, Incident, HistoryEntry, ProductBOM }

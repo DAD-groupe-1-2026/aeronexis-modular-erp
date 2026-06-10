@@ -16,11 +16,11 @@ async function seed() {
         firstName: 'Martin',
         lastName: 'Dupont',
         email: adminEmail,
-        passwordHash: 'Admin123!',
+        passwordHash: process.env.DEFAULT_ADMIN_PWD || 'Admin123!',
         role: 'admin',
         siteName: 'SIÈGE SOCIAL',
       })
-      console.log('Admin user seeded (admin@aeronexis.com / Admin123!).')
+      console.log('Admin user seeded.')
     } else {
       await existingAdmin.update({ siteName: 'SIÈGE SOCIAL' })
       console.log('Admin user already exists. siteName updated.')
@@ -34,11 +34,11 @@ async function seed() {
         firstName: 'Jean',
         lastName: 'Operateur',
         email: operatorEmail,
-        passwordHash: 'Operateur123!',
+        passwordHash: process.env.DEFAULT_OPERATOR_PWD || 'Operateur123!',
         role: 'operator',
         siteName: 'ATELIER PRINCIPAL',
       })
-      console.log('Operator user seeded (operator@aeronexis.com / Operateur123!).')
+      console.log('Operator user seeded.')
     } else {
       await existingOperator.update({ siteName: 'ATELIER PRINCIPAL' })
       console.log('Operator user already exists. siteName updated.')
@@ -52,11 +52,11 @@ async function seed() {
         firstName: 'Sophie',
         lastName: 'Logistique',
         email: logisticsEmail,
-        passwordHash: 'Logistique123!',
+        passwordHash: process.env.DEFAULT_LOGISTICS_PWD || 'Logistique123!',
         role: 'logistics',
         siteName: 'SITE ALPHA',
       })
-      console.log('Logistics user seeded (logistics@aeronexis.com / Logistique123!).')
+      console.log('Logistics user seeded.')
     } else {
       await existingLogistics.update({ siteName: 'SITE ALPHA' })
       console.log('Logistics user already exists. siteName updated.')
@@ -70,11 +70,11 @@ async function seed() {
         firstName: 'Claire',
         lastName: 'Commerciale',
         email: salesEmail,
-        passwordHash: 'Sales123!',
+        passwordHash: process.env.DEFAULT_SALES_PWD || 'Sales123!',
         role: 'sales',
         siteName: 'BUREAU VENTES',
       })
-      console.log('Sales user seeded (sales@aeronexis.com / Sales123!).')
+      console.log('Sales user seeded.')
     } else {
       await existingSales.update({ siteName: 'BUREAU VENTES' })
       console.log('Sales user already exists. siteName updated.')

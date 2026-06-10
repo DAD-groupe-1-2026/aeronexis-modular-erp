@@ -2,10 +2,10 @@ import React, { useMemo } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { DataTable, Badge, Button } from '@aeronexis-dynamics/ui';
-import { Truck } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { getShipments } from '../api/shipments';
-import type { LogisticsShipment } from '@aeronexis-dynamics/shared-types';
+import { Truck, ChevronRight } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getShipments, updateShipment } from '../api/shipments';
+import type { LogisticsShipment, ShipmentStatus } from '@aeronexis-dynamics/shared-types';
 import { formatDateTime } from '../lib/utils';
 import { createColumnHelper } from '@tanstack/react-table';
 
@@ -21,12 +21,55 @@ const pageTransition = {
   duration: 0.4
 };
 
+// Transitions de statut autorisées
+const STATUS_TRANSITIONS: Record<ShipmentStatus, { value: ShipmentStatus; label: string; color: string }[]> = {
+  preparing: [
+    { value: 'shipped', label: 'Marquer Expédiée', color: 'text-blue-400 hover:text-blue-300 hover:bg-blue-500/10' },
+  ],
+  shipped: [
+    { value: 'in_transit', label: 'En transit', color: 'text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10' },
+  ],
+  in_transit: [
+    { value: 'delivered', label: 'Marquer Livrée', color: 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10' },
+    { value: 'returned', label: 'Retournée', color: 'text-red-400 hover:text-red-300 hover:bg-red-500/10' },
+  ],
+  delivered: [],
+  returned: [],
+};
+
 const columnHelper = createColumnHelper<LogisticsShipment>();
 
 export default function ShipmentsView() {
   const navigate = useNavigate();
-  const { data: shipments = [], isLoading: loading } = useQuery({ queryKey: ['shipments'], queryFn: getShipments });
+  const queryClient = useQueryClient();
+  const { data: shipments = [], isLoading: loading } = useQuery({
+    queryKey: ['shipments'],
+    queryFn: getShipments,
+    refetchInterval: 10000,
+  });
   const { searchQuery = '' } = useOutletContext<{ searchQuery?: string }>() || {};
+
+  // Rafraîchissement temps réel via socket
+  React.useEffect(() => {
+    import('socket.io-client').then(({ io }) => {
+      const socket = io();
+      socket.on('notification', (data) => {
+        if (data.targetApp === 'logistics' || data.targetApp === 'global') {
+          queryClient.invalidateQueries({ queryKey: ['shipments'] });
+        }
+      });
+      return () => socket.disconnect();
+    });
+  }, [queryClient]);
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: ShipmentStatus }) =>
+      updateShipment({ id, payload: { status } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+    },
+  });
 
   const filteredShipments = useMemo(() => shipments.filter(shp =>
     shp?.orderId?.toLowerCase().includes(searchQuery?.toLowerCase() || '') ||
@@ -75,14 +118,35 @@ export default function ShipmentsView() {
     columnHelper.display({
       id: 'actions',
       header: '',
-      cell: info => (
-        <div className="text-right">
-          <Button variant="ghost" size="sm" className="h-8 text-indigo-400 hover:text-indigo-300 hover:bg-white/10 rounded-lg transition-colors" onClick={() => navigate(`/shipments/${info.row.original.id}`)}>Détails</Button>
-        </div>
-      ),
-      size: 96,
+      cell: info => {
+        const shipment = info.row.original;
+        const transitions = STATUS_TRANSITIONS[shipment.status] ?? [];
+        const isPending = updateStatusMutation.isPending;
+
+        if (transitions.length === 0) return null;
+
+        return (
+          <div className="flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
+            {transitions.map(t => (
+              <Button
+                key={t.value}
+                variant="ghost"
+                size="sm"
+                className={`h-8 text-xs rounded-lg gap-1 ${t.color}`}
+                disabled={isPending}
+                onClick={() => updateStatusMutation.mutate({ id: shipment.id, status: t.value })}
+              >
+                <ChevronRight className="w-3 h-3" />
+                {t.label}
+              </Button>
+            ))}
+          </div>
+        );
+      },
+      size: 240,
     }),
-  ], []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [updateStatusMutation.isPending]);
 
   return (
     <motion.div 
@@ -107,7 +171,11 @@ export default function ShipmentsView() {
       {loading ? (
         <div className="h-24 flex items-center justify-center text-slate-400">Chargement...</div>
       ) : (
-        <DataTable columns={columns} data={filteredShipments} />
+        <DataTable
+          columns={columns}
+          data={filteredShipments}
+          onRowClick={(shp) => navigate(`/shipments/${shp.id}`)}
+        />
       )}
     </motion.div>
   );

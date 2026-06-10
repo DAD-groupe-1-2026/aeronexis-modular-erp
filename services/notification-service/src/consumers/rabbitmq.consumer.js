@@ -48,6 +48,8 @@ export async function startConsumer() {
       }
     });
   } catch (err) {
-    console.error("RabbitMQ connection error:", err);
+    console.error("RabbitMQ connection error:", err.message);
+    console.log("Retrying in 5 seconds...");
+    setTimeout(startConsumer, 5000);
   }
 }

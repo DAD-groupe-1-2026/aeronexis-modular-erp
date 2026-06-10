@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getClients } from '../api/sales';
 import { 
   QueryErrorAlert, 
@@ -10,6 +10,7 @@ import {
 } from '@aeronexis-dynamics/ui';
 
 export function ClientsView() {
+  const navigate = useNavigate();
   const { data: clients = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: ['sales-clients'],
     queryFn: getClients,
@@ -24,14 +25,9 @@ export function ClientsView() {
     {
       accessorKey: 'companyName',
       header: 'Entreprise',
-      cell: (info: any) => {
-        const id = info.row.original.id;
-        return (
-          <Link to={`/clients/${id}`} className="font-medium text-white hover:text-indigo-300 transition-colors">
-            {info.getValue()}
-          </Link>
-        );
-      }
+      cell: (info: any) => (
+        <span className="font-medium text-white">{info.getValue()}</span>
+      )
     },
     {
       accessorKey: 'contactName',
@@ -93,6 +89,7 @@ export function ClientsView() {
         <DataTable
           data={clients}
           columns={columns}
+          onRowClick={(c) => navigate(`/clients/${c.id}`)}
         />
       </Card>
     </div>
